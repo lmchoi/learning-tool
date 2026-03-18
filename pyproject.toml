@@ -5,6 +5,7 @@ requires-python = ">=3.13"
 dependencies = [
     "numpy>=2.4.3",
     "pyyaml>=6.0.3",
+    "sentence-transformers>=5.3.0",
 ]
 
 [tool.ruff]
@@ -19,8 +20,9 @@ ignore = []
 known-first-party = ["core"]
 
 [tool.pytest.ini_options]
-addopts = "--import-mode=importlib"
+addopts = "--import-mode=importlib -m 'not slow'"
 pythonpath = ["."]
+markers = ["slow: requires real model, run with -m slow"]
 
 [tool.mypy]
 python_version = "3.13"

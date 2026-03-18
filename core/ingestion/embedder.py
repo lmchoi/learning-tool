@@ -28,3 +28,22 @@ class FakeEmbedder:
             vectors.append(vec)
 
         return np.array(vectors, dtype=np.float32)
+
+
+class SentenceTransformerEmbedder:
+    """Real embedder using sentence-transformers. Use in integration tests and production."""
+
+    MODEL = "all-MiniLM-L6-v2"
+
+    def __init__(self) -> None:
+        from sentence_transformers import SentenceTransformer
+
+        self._model = SentenceTransformer(self.MODEL)
+
+    def embed(self, chunks: list[str]) -> NDArray[np.float32]:
+        if not chunks:
+            return np.zeros((0, 384), dtype=np.float32)
+        result: NDArray[np.float32] = self._model.encode(
+            chunks, normalize_embeddings=True, convert_to_numpy=True
+        )
+        return result
