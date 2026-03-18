@@ -13,3 +13,4 @@ repos:
         additional_dependencies:
           - types-pyyaml
           - numpy
+          - pytest
