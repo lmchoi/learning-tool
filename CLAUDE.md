@@ -8,8 +8,7 @@ is config. Generate questions, evaluate answers, ask follow-ups.
 
 ## Architecture Rules
 
-- **Core must stay domain-agnostic.** If something is hardcoded to a specific context
-  (e.g. `anthropic-fde`), it is wrong.
+- **Core must stay domain-agnostic.** If something is hardcoded to a specific context, it is wrong.
 - **`contexts/` is gitignored entirely.** It contains personal learner data.
 - **Async throughout.** This is both a design requirement and a learning objective.
   Use `asyncio.gather` for independent work, not sequential awaits.
