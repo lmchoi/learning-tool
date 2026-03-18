@@ -42,7 +42,9 @@ class SentenceTransformerEmbedder:
 
     def embed(self, chunks: list[str]) -> NDArray[np.float32]:
         if not chunks:
-            return np.zeros((0, 384), dtype=np.float32)
+            dim = self._model.get_sentence_embedding_dimension()
+            assert dim is not None
+            return np.zeros((0, dim), dtype=np.float32)
         result: NDArray[np.float32] = self._model.encode(
             chunks, normalize_embeddings=True, convert_to_numpy=True
         )
