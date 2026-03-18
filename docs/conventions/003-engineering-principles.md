@@ -23,5 +23,14 @@ upfront even if the full complexity isn't needed yet.
 
 Ask: *if we don't do this now and need it later, how much does it cost to add?*
 
-- Low cost to add later → don't add it yet (e.g. switching from context stuffing to RAG)
+- Low cost to add later → don't add it yet
 - High cost to add later → worth designing for now (e.g. keeping core domain-agnostic)
+
+## Exception: learning is the goal
+
+This is also a learning project. Sometimes the more complex approach is the right
+one not because it's needed, but because understanding it is the point.
+
+When the simpler approach would skip a concept worth understanding deeply — do it
+the harder way deliberately. Build numpy RAG before ChromaDB. Write the chunking
+logic before abstracting it. The goal is to know what the abstraction is replacing.

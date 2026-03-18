@@ -18,7 +18,7 @@ is config. Generate questions, evaluate answers, ask follow-ups.
 ## Stack
 
 - FastAPI + HTMX for web
-- Context stuffing over RAG — load documents directly into prompt (see docs/decisions/002)
+- RAG with numpy first, ChromaDB later — chunk, embed, cosine similarity (see docs/decisions/002)
 - Faster-Whisper for local STT
 - Claude API for question generation, evaluation, Socratic mode
 - Railway for deployment

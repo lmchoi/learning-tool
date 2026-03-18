@@ -8,22 +8,42 @@
 
 **Body:**
 Right now there's nowhere to load learning material from. After this, you can
-point the tool at a set of documents (URLs, local files) via `sources.yaml` and
-have them loaded and ready to use.
+point the tool at a set of documents (local files) via `sources.yaml`, have them
+chunked at semantic boundaries, embedded, and stored — ready to be searched.
 
 This is the foundation everything else builds on.
 
 Includes the data models for `LearningContext` and `LearningConfig`.
 
 Acceptance criteria:
-- [ ] Running ingest against a `sources.yaml` loads all documents
-- [ ] Works with both local files and URLs
-- [ ] Multiple sources fetched concurrently
+- [ ] Running ingest against a `sources.yaml` chunks, embeds, and stores all documents
+- [ ] Chunks split at paragraph/section boundaries, not fixed token windows
+- [ ] Embeddings stored as numpy arrays alongside metadata (source, chunk index)
+- [ ] Multiple sources ingested concurrently
 - [ ] Re-running ingest updates cleanly
 
 ---
 
-## Issue 2 — Generate a practice question
+## Issue 2 — Search the knowledge base
+
+**Title:** Search the knowledge base with a natural language query
+
+**Body:**
+After ingestion we have chunks and embeddings but no way to query them. After this,
+you can ask a question in plain English and get back the most relevant chunks —
+retrieved via cosine similarity over numpy arrays.
+
+This is RAG from first principles: no vector database, just embeddings and maths.
+The retrieval logic stays the same when we graduate to ChromaDB later.
+
+Acceptance criteria:
+- [ ] Given a query, embeds it and returns top-k most relevant chunks via cosine similarity
+- [ ] Manually verified: a real query returns meaningfully relevant results
+- [ ] Async
+
+---
+
+## Issue 3 — Generate a practice question
 
 **Title:** Generate a context-aware practice question
 
@@ -38,13 +58,13 @@ Includes `UserProfile` and `Question` data models.
 
 Acceptance criteria:
 - [ ] Given a context and question type, returns a `Question`
-- [ ] Question is grounded in loaded knowledge base content
+- [ ] Question is grounded in retrieved knowledge base chunks
 - [ ] Prompt is fully parameterised — no hardcoded context details
 - [ ] Manually verified: question is specific, not generic
 
 ---
 
-## Issue 3 — Evaluate an answer
+## Issue 4 — Evaluate an answer
 
 **Title:** Evaluate a typed answer and return structured feedback
 
@@ -65,7 +85,7 @@ Acceptance criteria:
 
 ---
 
-## Issue 4 — Use it via HTTP
+## Issue 5 — Use it via HTTP
 
 **Title:** Expose the learning loop over HTTP (FastAPI)
 
@@ -85,7 +105,7 @@ Acceptance criteria:
 
 ---
 
-## Issue 5 — Deploy it
+## Issue 6 — Deploy it
 
 **Title:** Deploy to Railway
 
@@ -98,24 +118,24 @@ Acceptance criteria:
 
 ---
 
-## Issue 6 — Answer by voice
+## Issue 7 — Answer by voice
 
 **Title:** Answer practice questions by speaking
 
 **Body:**
 After this, you can speak your answer instead of typing it. More natural for
 practice — closer to the real thing. Transcription runs concurrently
-with context loading so there's no extra latency cost.
+with retrieval so there's no extra latency cost.
 
 Acceptance criteria:
 - [ ] `POST /contexts/{context_name}/evaluate/voice` accepts an audio file
 - [ ] Transcribed locally via Faster-Whisper (no external API)
-- [ ] Transcription and context loading run concurrently
+- [ ] Transcription and retrieval run concurrently
 - [ ] Evaluation result identical in structure to typed answer route
 
 ---
 
-## Issue 7 — Socratic follow-up
+## Issue 8 — Socratic follow-up
 
 **Title:** Get a follow-up question after evaluation
 
@@ -131,7 +151,25 @@ Acceptance criteria:
 
 ---
 
-## Issue 8 — Second learning context
+## Issue 9 — Swap numpy for ChromaDB
+
+**Title:** Replace numpy vector store with ChromaDB
+
+**Body:**
+After this, the retrieval layer uses ChromaDB instead of numpy arrays. The
+chunking and retrieval logic doesn't change — only the storage layer. This is
+the point where you understand what a vector database is actually doing for you,
+because you've already built the thing it replaces.
+
+Acceptance criteria:
+- [ ] ChromaDB replaces numpy arrays as the embedding store
+- [ ] Chunking logic unchanged
+- [ ] Retrieval interface unchanged — callers see no difference
+- [ ] Manually verified: retrieval quality identical to numpy implementation
+
+---
+
+## Issue 10 — Second learning context
 
 **Title:** Plug in a second learning context
 
@@ -145,37 +183,3 @@ Acceptance criteria:
 - [ ] New context ingested, questions generated, answers evaluated via the same routes
 - [ ] Zero changes to `core/`
 - [ ] Both contexts work simultaneously
-
----
-
-## Issue 9 — Warn when context size approaches the limit
-
-**Title:** Add token count warning when context approaches limit
-
-**Body:**
-Context stuffing works well for small knowledge bases — but there's no signal
-when it starts to degrade. After this, the app logs a warning when context size
-approaches Claude's limit, so you know when it's time to consider RAG rather
-than discovering it through mysterious response quality issues.
-
-Acceptance criteria:
-- [ ] Token count checked before each API call using `client.messages.count_tokens`
-- [ ] Warning logged when input tokens exceed a threshold (e.g. 150k)
-- [ ] Threshold is configurable, not hardcoded
-
----
-
-## Issue 9 — Warn when context size approaches the limit
-
-**Title:** Add token count warning when context approaches limit
-
-**Body:**
-Context stuffing works well for small knowledge bases — but there's no signal
-when it starts to degrade. After this, the app logs a warning when context size
-approaches Claude's limit, so you know when it's time to consider RAG rather
-than discovering it through mysterious response quality issues.
-
-Acceptance criteria:
-- [ ] Token count checked before each API call using `client.messages.count_tokens`
-- [ ] Warning logged when input tokens exceed a threshold (e.g. 150k)
-- [ ] Threshold is configurable, not hardcoded
