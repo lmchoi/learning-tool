@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 
 
 def cosine_similarity(a: NDArray[np.float32], b: NDArray[np.float32]) -> float:
-    """Cosine similarity between two 1-D vectors."""
+    """Cosine similarity between two 1-D vectors. Assumes neither is a zero vector."""
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
@@ -13,7 +13,7 @@ def top_k(
     chunks: list[str],
     k: int,
 ) -> list[tuple[str, float]]:
-    """Return up to k (chunk, score) pairs ranked by cosine similarity."""
+    """Return up to k (chunk, score) pairs ranked by cosine similarity. Assumes no zero vectors."""
     scores = embeddings @ query / (np.linalg.norm(embeddings, axis=1) * np.linalg.norm(query))
     k = min(k, len(chunks))
     top_indices = np.argsort(scores)[::-1][:k]

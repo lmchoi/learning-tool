@@ -57,3 +57,14 @@ def test_top_k_larger_than_corpus_returns_all() -> None:
     results = top_k(query, embeddings, chunks, k=10)
 
     assert len(results) == 2
+
+
+def test_top_k_single_chunk_returns_one_result() -> None:
+    query = np.array([1.0, 0.0], dtype=np.float32)
+    embeddings = np.array([[0.6, 0.8]], dtype=np.float32)
+    chunks = ["only"]
+
+    results = top_k(query, embeddings, chunks, k=5)
+
+    assert len(results) == 1
+    assert results[0][0] == "only"
