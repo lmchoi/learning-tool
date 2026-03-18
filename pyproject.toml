@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "numpy>=2.4.3",
+    "pyyaml>=6.0.3",
 ]
 
 [tool.ruff]
@@ -33,4 +34,5 @@ dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "ruff>=0.7.0",
+    "types-pyyaml>=6.0.12.20250915",
 ]
