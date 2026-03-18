@@ -18,11 +18,18 @@ is config. Generate questions, evaluate answers, ask follow-ups.
 ## Stack
 
 - FastAPI + HTMX for web
-- ChromaDB for local vector store (`data/chroma/` — gitignored)
-- sentence-transformers for embeddings
+- Context stuffing over RAG — load documents directly into prompt (see docs/decisions/002)
 - Faster-Whisper for local STT
 - Claude API for question generation, evaluation, Socratic mode
 - Railway for deployment
+
+## Engineering Principles
+
+Don't add something until there's a reason to — dependencies, abstractions,
+infrastructure, features. See docs/conventions/003-engineering-principles.md.
+
+Exception: decisions that are hard to reverse or would require restructuring later.
+Ask — if we skip this now and need it later, how much does it cost to add?
 
 ## Adding Dependencies
 
@@ -46,7 +53,6 @@ uv run pytest
 
 - `core/` — the tool, domain agnostic
 - `contexts/` — pluggable learning contexts, gitignored
-- `data/chroma/` — local vector store, gitignored
 
 ## What to Read First
 
