@@ -145,3 +145,37 @@ Acceptance criteria:
 - [ ] New context ingested, questions generated, answers evaluated via the same routes
 - [ ] Zero changes to `core/`
 - [ ] Both contexts work simultaneously
+
+---
+
+## Issue 9 — Warn when context size approaches the limit
+
+**Title:** Add token count warning when context approaches limit
+
+**Body:**
+Context stuffing works well for small knowledge bases — but there's no signal
+when it starts to degrade. After this, the app logs a warning when context size
+approaches Claude's limit, so you know when it's time to consider RAG rather
+than discovering it through mysterious response quality issues.
+
+Acceptance criteria:
+- [ ] Token count checked before each API call using `client.messages.count_tokens`
+- [ ] Warning logged when input tokens exceed a threshold (e.g. 150k)
+- [ ] Threshold is configurable, not hardcoded
+
+---
+
+## Issue 9 — Warn when context size approaches the limit
+
+**Title:** Add token count warning when context approaches limit
+
+**Body:**
+Context stuffing works well for small knowledge bases — but there's no signal
+when it starts to degrade. After this, the app logs a warning when context size
+approaches Claude's limit, so you know when it's time to consider RAG rather
+than discovering it through mysterious response quality issues.
+
+Acceptance criteria:
+- [ ] Token count checked before each API call using `client.messages.count_tokens`
+- [ ] Warning logged when input tokens exceed a threshold (e.g. 150k)
+- [ ] Threshold is configurable, not hardcoded
