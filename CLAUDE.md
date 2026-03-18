@@ -29,6 +29,11 @@ is config. Generate questions, evaluate answers, ask follow-ups.
 
 Add runtime deps only when writing the code that needs them. Do not front-load.
 
+## Git Workflow
+
+- Always work on a branch, never commit directly to main
+- Raise a PR for all changes, including setup/tooling work
+
 ## Running Checks
 
 ```bash
