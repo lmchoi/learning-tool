@@ -14,4 +14,5 @@
 - Commit messages explain why, not what
 - One logical change per commit — don't bundle unrelated changes
 - This applies to docs too — each ADR, convention, or log entry is its own commit
+- No "fix" commits before a PR is raised — use `git commit --fixup` and rebase to squash into the original
 - Pre-commit hooks run ruff and mypy on every commit
