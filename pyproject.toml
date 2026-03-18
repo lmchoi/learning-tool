@@ -17,6 +17,7 @@ known-first-party = ["core"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
+pythonpath = ["."]
 
 [tool.mypy]
 python_version = "3.13"
