@@ -15,6 +15,9 @@ ignore = []
 [tool.ruff.lint.isort]
 known-first-party = ["core"]
 
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+
 [tool.mypy]
 python_version = "3.13"
 strict = true
