@@ -48,3 +48,15 @@ Key decisions:
 The knowledge base grows large enough that numpy similarity search becomes slow,
 or managing the array store becomes unwieldy. At that point swap the storage layer
 to ChromaDB — chunking and retrieval logic stays the same.
+
+## Hybrid search (future)
+Dense search alone can miss keyword-heavy queries — e.g. searching for a specific
+term or name that the embedding model paraphrases away.
+
+When that becomes a problem, the standard approach is to combine:
+- **BM25** — classic keyword scoring (sparse)
+- **Dense search** — cosine similarity on embeddings (what we have)
+- **RRF** (reciprocal rank fusion) — merges the two ranked lists into one
+
+That's the right time to introduce a retrieval strategy abstraction. Not now —
+dense search covers the majority of cases for a personal learning tool.

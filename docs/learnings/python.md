@@ -75,3 +75,23 @@ markers = ["slow: requires real model, run with -m slow"]
 ```
 
 Run slow tests explicitly: `uv run pytest -m slow`
+
+---
+
+## Walrus operator (:=) to avoid calling a function twice
+
+When filtering and transforming in a list comprehension, you sometimes call the same
+function in both the condition and the output expression. The walrus operator assigns
+and evaluates in one step, avoiding the double call:
+
+```python
+# calls strip() twice per item
+[chunk.strip() for chunk in items if chunk.strip()]
+
+# calls strip() once — := assigns the result to s, which is reused in the output
+[s for chunk in items if (s := chunk.strip())]
+```
+
+The assignment `s := chunk.strip()` evaluates to the stripped string. An empty string
+is falsy, so whitespace-only items are filtered out, and `s` in the output expression
+reuses the already-computed value.
