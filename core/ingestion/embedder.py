@@ -34,15 +34,15 @@ class FakeEmbedder:
 class SentenceTransformerEmbedder:
     """Real embedder using sentence-transformers. Use in integration tests and production."""
 
-    MODEL = "all-MiniLM-L6-v2"
+    DEFAULT_MODEL = "all-MiniLM-L6-v2"
 
-    def __init__(self) -> None:
+    def __init__(self, model: str = DEFAULT_MODEL) -> None:
         logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
         logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
 
         from sentence_transformers import SentenceTransformer
 
-        self._model = SentenceTransformer(self.MODEL)
+        self._model = SentenceTransformer(model)
 
     def embed(self, chunks: list[str]) -> NDArray[np.float32]:
         if not chunks:
