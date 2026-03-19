@@ -44,3 +44,8 @@ def test_chunks_are_inside_context_tags() -> None:
     context_start = prompt.index("<context>")
     context_end = prompt.index("</context>")
     assert "Unique chunk content." in prompt[context_start:context_end]
+
+
+def test_prompt_instructs_plain_text_output() -> None:
+    prompt = build_question_prompt(["Some material."], UserProfile(experience_level="beginner"))
+    assert "plain text" in prompt
