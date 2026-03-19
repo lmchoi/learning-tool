@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # PreToolUse: block git commit if ruff or mypy fail.
 # Exit code 2 = blocking error shown to Claude.
+# pytest is excluded — it's slow and left to manual runs or CI.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
 [[ "$COMMAND" == *"git commit"* ]] || exit 0
 
+# $CLAUDE_PROJECT_DIR is set by Claude Code to the project root.
+# Falls back to . if running outside Claude Code.
 PROJECT_ROOT=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --show-toplevel 2>/dev/null) || exit 0
 cd "$PROJECT_ROOT" || exit 0
 
@@ -29,7 +32,7 @@ if ! OUT=$(uv run mypy . 2>&1); then
 fi
 
 if [[ -n "$ERRORS" ]]; then
-    echo -e "Pre-commit checks failed:\n$OUTPUT" >&2
+    printf "Pre-commit checks failed:\n%s\n" "$OUTPUT" >&2
     exit 2
 fi
 
