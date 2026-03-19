@@ -1,4 +1,7 @@
-# 007 — Model Selection Per Task
+# ADR 007 — Model Selection Per Task
+
+## Status
+Accepted
 
 ## Decision
 
