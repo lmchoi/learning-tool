@@ -137,53 +137,59 @@ def practice(
         typer.echo(f"Error: context '{context}' not found. Run 'make ingest' first.", err=True)
         raise typer.Exit(code=1)
 
-    async def loop(current_query: str, question_text: str | None = None) -> None:
+    async def loop() -> None:
         client = AsyncAnthropic()
         profile = UserProfile(experience_level=experience_level)
         store = ChunkStore(store_dir)
         embedder = SentenceTransformerEmbedder()
         retriever = Retriever(store=store, embedder=embedder)
-        chunks = [chunk for chunk, _ in retriever.retrieve(context, current_query, k)]
+        # Chunks are retrieved once per topic query and reused across follow-ups,
+        # since follow-up questions target gaps within the same retrieved context.
+        chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
 
-        if question_text is None:
-            prompt = build_question_prompt(chunks, profile)
-            result = await generate_question(prompt, client)
-            question_text = result.text
+        next_question: str | None = None
+        while True:
+            if next_question is None:
+                prompt = build_question_prompt(chunks, profile)
+                result = await generate_question(prompt, client)
+                next_question = result.text
 
-        print(f"\n{question_text}\n")
-        answer = typer.prompt("Your answer")
+            print(f"\n{next_question}\n")
+            answer = typer.prompt("Your answer")
 
-        eval_prompt = build_evaluation_prompt(
-            question=question_text,
-            answer=answer,
-            chunks=chunks,
-            profile=profile,
-        )
-        evaluation = await evaluate_answer(eval_prompt, client)
+            eval_prompt = build_evaluation_prompt(
+                question=next_question,
+                answer=answer,
+                chunks=chunks,
+                profile=profile,
+            )
+            evaluation = await evaluate_answer(eval_prompt, client)
 
-        print(f"\nScore: {evaluation.score}/10")
-        if evaluation.strengths:
-            print("\nStrengths:")
-            for s in evaluation.strengths:
-                print(f"  - {s}")
-        if evaluation.gaps:
-            print("\nGaps:")
-            for g in evaluation.gaps:
-                print(f"  - {g}")
-        if evaluation.missing_points:
-            print("\nMissing points:")
-            for m in evaluation.missing_points:
-                print(f"  - {m}")
-        if evaluation.suggested_addition:
-            print(f"\nSuggested addition: {evaluation.suggested_addition}")
+            print(f"\nScore: {evaluation.score}/10")
+            if evaluation.strengths:
+                print("\nStrengths:")
+                for s in evaluation.strengths:
+                    print(f"  - {s}")
+            if evaluation.gaps:
+                print("\nGaps:")
+                for g in evaluation.gaps:
+                    print(f"  - {g}")
+            if evaluation.missing_points:
+                print("\nMissing points:")
+                for m in evaluation.missing_points:
+                    print(f"  - {m}")
+            if evaluation.suggested_addition:
+                print(f"\nSuggested addition: {evaluation.suggested_addition}")
 
-        if evaluation.follow_up_question:
-            await loop(current_query, evaluation.follow_up_question)
-        elif typer.confirm("\nAnother question?", default=True):
-            await loop(current_query)
+            if evaluation.follow_up_question:
+                next_question = evaluation.follow_up_question
+            elif typer.confirm("\nAnother question?", default=True):
+                next_question = None
+            else:
+                break
 
     try:
-        asyncio.run(loop(query))
+        asyncio.run(loop())
     except (KeyboardInterrupt, typer.Abort):
         typer.echo("\nBye.")
 
