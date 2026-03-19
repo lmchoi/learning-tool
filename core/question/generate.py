@@ -1,11 +1,20 @@
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 from core.models import Question
 
 MODEL = "claude-sonnet-4-6"
 
 
-async def generate_question(prompt: str, client: Any) -> Question:
+class AnthropicMessages(Protocol):
+    async def parse(self, **kwargs: Any) -> Any: ...
+
+
+class AnthropicClient(Protocol):
+    @property
+    def messages(self) -> AnthropicMessages: ...
+
+
+async def generate_question(prompt: str, client: AnthropicClient) -> Question:
     response = await client.messages.parse(
         model=MODEL,
         max_tokens=1024,

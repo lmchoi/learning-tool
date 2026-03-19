@@ -69,7 +69,7 @@ def question(
 
     chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
     prompt = build_question_prompt(chunks, profile)
-    result = asyncio.run(generate_question(prompt, AsyncAnthropic()))
+    result = asyncio.run(generate_question(prompt, AsyncAnthropic()))  # type: ignore[arg-type]
     print(result.text)
 
 
