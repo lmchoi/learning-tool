@@ -4,6 +4,8 @@ from pathlib import Path
 import typer
 from anthropic import AsyncAnthropic
 
+from core.evaluation.evaluate import evaluate_answer
+from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.ingest import ingest
 from core.ingestion.store import ChunkStore
@@ -77,6 +79,48 @@ def question(
     prompt = _build_prompt(context, query, experience_level, k, store_dir)
     result = asyncio.run(generate_question(prompt, AsyncAnthropic()))  # type: ignore[arg-type]
     print(result.text)
+
+
+@app.command()
+def evaluate(
+    context: str = typer.Argument(..., help="Context name (must be ingested)"),
+    query: str = typer.Argument(..., help="Query to retrieve relevant chunks"),
+    question_text: str = typer.Argument(..., help="The question that was asked"),
+    answer_text: str = typer.Argument(..., help="The learner's answer to evaluate"),
+    experience_level: str = typer.Option("intermediate", help="Learner experience level"),
+    k: int = typer.Option(5, help="Number of chunks to retrieve"),
+    store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the chunk store"),
+) -> None:
+    """Evaluate a learner's answer to a question using Claude."""
+    store = ChunkStore(store_dir)
+    embedder = SentenceTransformerEmbedder()
+    retriever = Retriever(store=store, embedder=embedder)
+    profile = UserProfile(experience_level=experience_level)
+    chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
+    prompt = build_evaluation_prompt(
+        question=question_text,
+        answer=answer_text,
+        chunks=chunks,
+        profile=profile,
+    )
+    result = asyncio.run(evaluate_answer(prompt, AsyncAnthropic()))  # type: ignore[arg-type]
+    print(f"Score: {result.score}/10")
+    if result.strengths:
+        print("\nStrengths:")
+        for s in result.strengths:
+            print(f"  - {s}")
+    if result.gaps:
+        print("\nGaps:")
+        for g in result.gaps:
+            print(f"  - {g}")
+    if result.missing_points:
+        print("\nMissing points:")
+        for m in result.missing_points:
+            print(f"  - {m}")
+    if result.suggested_addition:
+        print(f"\nSuggested addition: {result.suggested_addition}")
+    if result.follow_up_question:
+        print(f"\nFollow-up question: {result.follow_up_question}")
 
 
 if __name__ == "__main__":

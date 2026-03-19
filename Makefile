@@ -1,4 +1,4 @@
-.PHONY: ingest prompt question checks test
+.PHONY: ingest prompt question evaluate checks test
 
 ingest:
 	uv run learn ingest-context $(context) $(files)
@@ -8,6 +8,9 @@ prompt:
 
 question:
 	uv run learn question $(context) "$(query)"
+
+evaluate:
+	uv run learn evaluate $(context) "$(query)" "$(question)" "$(answer)"
 
 checks:
 	uv run ruff check .
