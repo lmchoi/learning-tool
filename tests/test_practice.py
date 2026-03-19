@@ -45,14 +45,14 @@ def test_practice_prints_score_and_stops_when_declined(
     mock_embedder_cls: MagicMock,
     tmp_path: Path,
 ) -> None:
-    (tmp_path / "jd").mkdir()
-    mock_generate.return_value = Question(text="What is the FDE role?")
+    (tmp_path / "test-context").mkdir()
+    mock_generate.return_value = Question(text="What is the role?")
     mock_evaluate.return_value = _evaluation(score=7)
     mock_retriever_cls.return_value = _fake_retriever(["some chunk"])
 
     result = runner.invoke(
         app,
-        ["practice", "jd", "responsibilities", "--store-dir", str(tmp_path)],
+        ["practice", "test-context", "responsibilities", "--store-dir", str(tmp_path)],
         input="my answer\nn\n",
     )
 
@@ -71,8 +71,8 @@ def test_practice_auto_follows_up_without_prompting(
     mock_embedder_cls: MagicMock,
     tmp_path: Path,
 ) -> None:
-    (tmp_path / "jd").mkdir()
-    mock_generate.return_value = Question(text="What is the FDE role?")
+    (tmp_path / "test-context").mkdir()
+    mock_generate.return_value = Question(text="What is the role?")
     mock_evaluate.side_effect = [
         _evaluation(score=5, follow_up="What does FDE stand for?"),
         _evaluation(score=8),
@@ -81,7 +81,7 @@ def test_practice_auto_follows_up_without_prompting(
 
     result = runner.invoke(
         app,
-        ["practice", "jd", "responsibilities", "--store-dir", str(tmp_path)],
+        ["practice", "test-context", "responsibilities", "--store-dir", str(tmp_path)],
         input="first answer\nsecond answer\nn\n",
     )
 
