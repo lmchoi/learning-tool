@@ -123,5 +123,70 @@ def evaluate(
         print(f"\nFollow-up question: {result.follow_up_question}")
 
 
+@app.command()
+def practice(
+    context: str = typer.Argument(..., help="Context name (must be ingested)"),
+    query: str = typer.Argument(..., help="Topic to generate questions about"),
+    experience_level: str = typer.Option("intermediate", help="Learner experience level"),
+    k: int = typer.Option(5, help="Number of chunks to retrieve"),
+    store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the chunk store"),
+) -> None:
+    """Interactive practice loop — question, answer, evaluate, repeat."""
+    ctx_dir = store_dir / context
+    if not ctx_dir.exists():
+        typer.echo(f"Error: context '{context}' not found. Run 'make ingest' first.", err=True)
+        raise typer.Exit(code=1)
+
+    async def loop(current_query: str, question_text: str | None = None) -> None:
+        client = AsyncAnthropic()
+        profile = UserProfile(experience_level=experience_level)
+        store = ChunkStore(store_dir)
+        embedder = SentenceTransformerEmbedder()
+        retriever = Retriever(store=store, embedder=embedder)
+        chunks = [chunk for chunk, _ in retriever.retrieve(context, current_query, k)]
+
+        if question_text is None:
+            prompt = build_question_prompt(chunks, profile)
+            result = await generate_question(prompt, client)
+            question_text = result.text
+
+        print(f"\n{question_text}\n")
+        answer = typer.prompt("Your answer")
+
+        eval_prompt = build_evaluation_prompt(
+            question=question_text,
+            answer=answer,
+            chunks=chunks,
+            profile=profile,
+        )
+        evaluation = await evaluate_answer(eval_prompt, client)
+
+        print(f"\nScore: {evaluation.score}/10")
+        if evaluation.strengths:
+            print("\nStrengths:")
+            for s in evaluation.strengths:
+                print(f"  - {s}")
+        if evaluation.gaps:
+            print("\nGaps:")
+            for g in evaluation.gaps:
+                print(f"  - {g}")
+        if evaluation.missing_points:
+            print("\nMissing points:")
+            for m in evaluation.missing_points:
+                print(f"  - {m}")
+        if evaluation.suggested_addition:
+            print(f"\nSuggested addition: {evaluation.suggested_addition}")
+
+        if evaluation.follow_up_question:
+            await loop(current_query, evaluation.follow_up_question)
+        elif typer.confirm("\nAnother question?", default=True):
+            await loop(current_query)
+
+    try:
+        asyncio.run(loop(query))
+    except (KeyboardInterrupt, typer.Abort):
+        typer.echo("\nBye.")
+
+
 if __name__ == "__main__":
     app()

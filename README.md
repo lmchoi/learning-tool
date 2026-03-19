@@ -108,10 +108,19 @@ Use `--experience-level` to tailor the question to the learner:
 uv run learn question biology "what is the role of mitochondria" --experience-level beginner
 ```
 
-### 4. Evaluate an answer
+### 4. Practice interactively
 
-Retrieves relevant chunks and asks Claude to score and give structured feedback on a learner's answer.
-Requires `ANTHROPIC_API_KEY` set in your environment.
+The main way to use the tool. Generates a question, prompts for your answer, evaluates it, then automatically asks the follow-up question. Continues until you decline or press Ctrl+C.
+
+```bash
+make practice context=<name> query="<topic>"
+# e.g.
+make practice context=biology query="mitochondria"
+```
+
+### 5. Evaluate a single answer
+
+For one-off evaluation outside the practice loop.
 
 ```bash
 make evaluate context=<name> query="<topic>" question="<question text>" answer="<answer text>"
@@ -119,9 +128,9 @@ make evaluate context=<name> query="<topic>" question="<question text>" answer="
 make evaluate context=biology query="mitochondria" question="What is the role of mitochondria?" answer="They produce energy for the cell."
 ```
 
-The output includes a score, strengths, gaps, missing points, a suggested addition, and a follow-up question.
+The output includes a score, strengths, gaps, missing points, and a suggested addition.
 
-### Inspect the prompt without calling the API
+### 6. Inspect the prompt without calling the API
 
 Useful for verifying retrieval quality before spending API credits:
 
