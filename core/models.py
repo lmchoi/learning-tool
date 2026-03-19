@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel
+
 
 @dataclass
 class UserProfile:
     experience_level: str
 
 
-@dataclass
-class Question:
+class Question(BaseModel):
     text: str
