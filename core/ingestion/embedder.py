@@ -36,6 +36,11 @@ class SentenceTransformerEmbedder:
     MODEL = "all-MiniLM-L6-v2"
 
     def __init__(self) -> None:
+        import logging
+
+        logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+        logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+
         from sentence_transformers import SentenceTransformer
 
         self._model = SentenceTransformer(self.MODEL)
