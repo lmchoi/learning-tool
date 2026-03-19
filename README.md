@@ -73,11 +73,43 @@ and concepts encountered along the way.
 uv sync
 ```
 
+## Usage
+
+Plug in a context — a folder of documents about whatever you're learning — and the
+tool generates practice questions grounded in that material.
+
+### 1. Prepare your context
+
+Create a directory under `contexts/` and add your learning material as text or
+markdown files. `contexts/` is gitignored so your personal data stays local.
+
+### 2. Ingest
+
+```bash
+make ingest context=<name> files=<path>
+# e.g.
+make ingest context=biology files=contexts/biology/notes.md
+```
+
+### 3. Preview a question prompt
+
+Retrieves relevant chunks and prints the prompt that will be sent to Claude.
+Useful for verifying the retrieval is working before wiring up the API.
+
+```bash
+make prompt context=<name> query="<your question>"
+# e.g.
+make prompt context=biology query="what is the role of mitochondria"
+```
+
+Use `--experience-level` to tailor the question to the learner:
+
+```bash
+uv run learn question-prompt biology "what is the role of mitochondria" --experience-level beginner
+```
+
 ## Running checks
 
 ```bash
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy .
-uv run pytest
+make checks
 ```
