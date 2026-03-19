@@ -37,8 +37,17 @@ Add runtime deps only when writing the code that needs them. Do not front-load.
 
 ## Git Workflow
 
-- Always work on a branch, never commit directly to main
-- Raise a PR for all changes, including setup/tooling work
+- **Never commit directly to main.** Always create a feature branch first.
+- Raise a PR for all changes, including setup/tooling work.
+- Keep commits atomic — one logical change per commit. If unrelated files were touched, split into separate commits.
+- Use `git reset --soft` for commit reorganisation, not file-by-file editing.
+- Do not assume a branch is merged just because it's gone — squash merges don't appear in `git branch --merged`. Check PR status instead.
+- Before any commit: run checks (see Running Checks below). Do not commit if anything fails.
+
+## Scope
+
+- Do not implement or add content beyond what was explicitly requested.
+- During design or planning discussions, do not edit files unless asked to.
 
 ## Running Checks
 
