@@ -28,7 +28,7 @@ async def test_passes_prompt_as_user_message() -> None:
             strengths=[],
             gaps=[],
             missing_points=[],
-            suggested_addition="",
+            suggested_addition=None,
             follow_up_question="",
         )
     )
