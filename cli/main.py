@@ -41,6 +41,10 @@ def _build_prompt(
     k: int,
     store_dir: Path,
 ) -> str:
+    ctx_dir = store_dir / context
+    if not ctx_dir.exists():
+        typer.echo(f"Error: context '{context}' not found. Run 'make ingest' first.", err=True)
+        raise typer.Exit(code=1)
     store = ChunkStore(store_dir)
     embedder = SentenceTransformerEmbedder()
     retriever = Retriever(store=store, embedder=embedder)
