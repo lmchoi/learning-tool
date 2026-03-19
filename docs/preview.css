@@ -1,3 +1,5 @@
+/* Used by the VS Code Markdown Preview Mermaid Support extension to set
+   a background colour for Mermaid diagrams in the local preview. */
 .mermaid svg {
     background-color: rgb(212, 212, 212);
 }
