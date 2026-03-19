@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from core.models import Question
 
@@ -6,9 +6,10 @@ MODEL = "claude-sonnet-4-6"
 
 
 async def generate_question(prompt: str, client: Any) -> Question:
-    response = await client.messages.create(
+    response = await client.messages.parse(
         model=MODEL,
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
+        output_format=Question,
     )
-    return Question(text=response.content[0].text.strip())
+    return cast(Question, response.parsed_output)
