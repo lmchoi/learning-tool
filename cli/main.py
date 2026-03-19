@@ -34,6 +34,21 @@ def ingest_context(
     typer.echo(f"Ingested {len(files)} file(s) into context '{context}'")
 
 
+def _build_prompt(
+    context: str,
+    query: str,
+    experience_level: str,
+    k: int,
+    store_dir: Path,
+) -> str:
+    store = ChunkStore(store_dir)
+    embedder = SentenceTransformerEmbedder()
+    retriever = Retriever(store=store, embedder=embedder)
+    profile = UserProfile(experience_level=experience_level)
+    chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
+    return build_question_prompt(chunks, profile)
+
+
 @app.command()
 def question_prompt(
     context: str = typer.Argument(..., help="Context name (must be ingested)"),
@@ -43,14 +58,7 @@ def question_prompt(
     store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the chunk store"),
 ) -> None:
     """Print the question prompt that would be sent to Claude."""
-    store = ChunkStore(store_dir)
-    embedder = SentenceTransformerEmbedder()
-    retriever = Retriever(store=store, embedder=embedder)
-    profile = UserProfile(experience_level=experience_level)
-
-    chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
-    prompt = build_question_prompt(chunks, profile)
-    print(prompt)
+    print(_build_prompt(context, query, experience_level, k, store_dir))
 
 
 @app.command()
@@ -62,13 +70,7 @@ def question(
     store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the chunk store"),
 ) -> None:
     """Generate a practice question from retrieved chunks using Claude."""
-    store = ChunkStore(store_dir)
-    embedder = SentenceTransformerEmbedder()
-    retriever = Retriever(store=store, embedder=embedder)
-    profile = UserProfile(experience_level=experience_level)
-
-    chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
-    prompt = build_question_prompt(chunks, profile)
+    prompt = _build_prompt(context, query, experience_level, k, store_dir)
     result = asyncio.run(generate_question(prompt, AsyncAnthropic()))  # type: ignore[arg-type]
     print(result.text)
 
