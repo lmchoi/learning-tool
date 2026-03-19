@@ -3,6 +3,7 @@ from pathlib import Path
 import typer
 
 from core.ingestion.embedder import SentenceTransformerEmbedder
+from core.ingestion.ingest import ingest
 from core.ingestion.store import ChunkStore
 from core.models import UserProfile
 from core.question.prompt import build_question_prompt
@@ -11,6 +12,23 @@ from core.rag.retriever import Retriever
 app = typer.Typer()
 
 DEFAULT_STORE = Path("contexts/store")
+
+
+@app.command()
+def ingest_context(
+    context: str = typer.Argument(..., help="Context name to ingest into"),
+    files: list[Path] = typer.Argument(..., help="Paths to files to ingest"),
+    store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the chunk store"),
+) -> None:
+    """Chunk, embed, and store documents for a context."""
+    missing = [f for f in files if not f.exists()]
+    if missing:
+        typer.echo(f"Error: file(s) not found: {', '.join(str(f) for f in missing)}", err=True)
+        raise typer.Exit(code=1)
+    store = ChunkStore(store_dir)
+    embedder = SentenceTransformerEmbedder()
+    ingest(context=context, paths=files, embedder=embedder, store=store)
+    typer.echo(f"Ingested {len(files)} file(s) into context '{context}'")
 
 
 @app.command()
