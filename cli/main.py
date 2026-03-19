@@ -1,0 +1,36 @@
+from pathlib import Path
+
+import typer
+
+from core.ingestion.embedder import SentenceTransformerEmbedder
+from core.ingestion.store import ChunkStore
+from core.models import UserProfile
+from core.question.prompt import build_question_prompt
+from core.rag.retriever import Retriever
+
+app = typer.Typer()
+
+DEFAULT_STORE = Path("contexts/store")
+
+
+@app.command()
+def question_prompt(
+    context: str = typer.Argument(..., help="Context name (must be ingested)"),
+    query: str = typer.Argument(..., help="Query to retrieve relevant chunks"),
+    experience_level: str = typer.Option("intermediate", help="Learner experience level"),
+    k: int = typer.Option(5, help="Number of chunks to retrieve"),
+    store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the chunk store"),
+) -> None:
+    """Print the question prompt that would be sent to Claude."""
+    store = ChunkStore(store_dir)
+    embedder = SentenceTransformerEmbedder()
+    retriever = Retriever(store=store, embedder=embedder)
+    profile = UserProfile(experience_level=experience_level)
+
+    chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
+    prompt = build_question_prompt(chunks, profile)
+    print(prompt)
+
+
+if __name__ == "__main__":
+    app()

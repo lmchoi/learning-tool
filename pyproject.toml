@@ -6,6 +6,7 @@ dependencies = [
     "numpy>=2.4.3",
     "pyyaml>=6.0.3",
     "sentence-transformers>=5.3.0",
+    "typer>=0.12.0",
 ]
 
 [tool.ruff]
@@ -15,6 +16,9 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = []
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Argument", "typer.Option"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["core"]
