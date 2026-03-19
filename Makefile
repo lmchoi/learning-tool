@@ -1,4 +1,4 @@
-.PHONY: ingest prompt question evaluate practice checks test help
+.PHONY: ingest prompt question evaluate practice serve checks test help
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -17,6 +17,9 @@ evaluate:  ## Evaluate an answer  — context=<name> query=<topic> question=<q> 
 
 practice:  ## Interactive practice loop  — context=<name> query=<topic>
 	uv run learn practice $(context) "$(query)"
+
+serve:  ## Start the API server
+	uv run uvicorn api.main:app --reload
 
 checks:  ## Run ruff, mypy, and pytest
 	uv run ruff check .
