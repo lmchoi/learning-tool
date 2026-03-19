@@ -6,7 +6,9 @@ MODEL = "claude-sonnet-4-6"
 
 
 class AnthropicMessages(Protocol):
-    async def parse(self, **kwargs: Any) -> Any: ...
+    async def parse(
+        self, *, model: str, max_tokens: int, messages: Any, output_format: Any
+    ) -> Any: ...
 
 
 class AnthropicClient(Protocol):

@@ -77,7 +77,7 @@ def question(
 ) -> None:
     """Generate a practice question from retrieved chunks using Claude."""
     prompt = _build_prompt(context, query, experience_level, k, store_dir)
-    result = asyncio.run(generate_question(prompt, AsyncAnthropic()))  # type: ignore[arg-type]
+    result = asyncio.run(generate_question(prompt, AsyncAnthropic()))
     print(result.text)
 
 
@@ -103,7 +103,7 @@ def evaluate(
         chunks=chunks,
         profile=profile,
     )
-    result = asyncio.run(evaluate_answer(prompt, AsyncAnthropic()))  # type: ignore[arg-type]
+    result = asyncio.run(evaluate_answer(prompt, AsyncAnthropic()))
     print(f"Score: {result.score}/10")
     if result.strengths:
         print("\nStrengths:")
