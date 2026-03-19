@@ -43,28 +43,42 @@ Acceptance criteria:
 
 ---
 
-## Issue 3 — Generate a practice question
+## Issue 3 — Build the question prompt
+
+**Title:** Build a grounded question prompt from retrieved chunks
+
+**Body:**
+After this, the tool can retrieve relevant chunks for a learner's context and
+assemble a fully parameterised prompt — ready to send to Claude. No API call yet.
+
+Includes `UserProfile` (`experience_level: str`) and `Question` (`text: str`) data models.
+
+Acceptance criteria:
+- [ ] Given a context and learner profile, retrieves relevant chunks and builds a prompt grounded in them
+- [ ] CLI command prints the prompt — manually verify it contains relevant retrieved chunks
+- [ ] Prompt is fully parameterised — no hardcoded context details
+- [ ] Async
+
+---
+
+## Issue 4 — Generate a practice question
 
 **Title:** Generate a context-aware practice question
 
 **Body:**
-After this, the tool can generate a question that is grounded in the knowledge base
-and tailored to the learner — not a generic question a search engine could produce.
-The question should only make sense for this specific context and user.
+After this, the tool calls Claude with the prompt built in Issue 3 and returns a
+`Question`. The question should only make sense for this specific context and learner —
+not answerable from general knowledge.
 
 First real use of the Claude API.
 
-Includes `UserProfile` and `Question` data models.
-
 Acceptance criteria:
-- [ ] Given a context and question type, returns a `Question`
-- [ ] Question is grounded in retrieved knowledge base chunks
-- [ ] Prompt is fully parameterised — no hardcoded context details
-- [ ] Manually verified: question is specific, not generic
+- [ ] Given a context and learner profile, returns a `Question`
+- [ ] Manually verified: question is specific to the knowledge base, not answerable from general knowledge
 
 ---
 
-## Issue 4 — Evaluate an answer
+## Issue 5 — Evaluate an answer
 
 **Title:** Evaluate a typed answer and return structured feedback
 
@@ -85,7 +99,7 @@ Acceptance criteria:
 
 ---
 
-## Issue 5 — Use it via HTTP
+## Issue 6 — Use it via HTTP
 
 **Title:** Expose the learning loop over HTTP (FastAPI)
 
@@ -105,7 +119,7 @@ Acceptance criteria:
 
 ---
 
-## Issue 6 — Deploy it
+## Issue 7 — Deploy it
 
 **Title:** Deploy to Railway
 
@@ -118,7 +132,7 @@ Acceptance criteria:
 
 ---
 
-## Issue 7 — Answer by voice
+## Issue 8 — Answer by voice
 
 **Title:** Answer practice questions by speaking
 
@@ -135,7 +149,7 @@ Acceptance criteria:
 
 ---
 
-## Issue 8 — Socratic follow-up
+## Issue 9 — Socratic follow-up
 
 **Title:** Get a follow-up question after evaluation
 
@@ -151,7 +165,7 @@ Acceptance criteria:
 
 ---
 
-## Issue 9 — Swap numpy for ChromaDB
+## Issue 10 — Swap numpy for ChromaDB
 
 **Title:** Replace numpy vector store with ChromaDB
 
@@ -169,7 +183,7 @@ Acceptance criteria:
 
 ---
 
-## Issue 10 — Second learning context
+## Issue 11 — Second learning context
 
 **Title:** Plug in a second learning context
 
