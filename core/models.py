@@ -1,6 +1,7 @@
 from dataclasses import dataclass
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 @dataclass
@@ -13,9 +14,9 @@ class Question(BaseModel):
 
 
 class EvaluationResult(BaseModel):
-    score: int
+    score: Annotated[int, Field(ge=0, le=10)]
     strengths: list[str]
     gaps: list[str]
     missing_points: list[str]
-    suggested_addition: str
+    suggested_addition: str | None
     follow_up_question: str

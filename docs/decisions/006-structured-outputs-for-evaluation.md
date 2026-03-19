@@ -5,7 +5,7 @@ Accepted
 
 ## Context
 The evaluation call asks Claude to return structured data — score, strengths, gaps,
-missing points, suggested addition, and an optional follow-up question. This data
+missing points, suggested addition, and a follow-up question. This data
 needs to be programmatically accessible (e.g. to track weak areas over sessions).
 
 Options considered:
@@ -23,12 +23,12 @@ replacing manual whitespace stripping with a typed `Question` model.
 
 ```python
 class EvaluationResult(BaseModel):
-    score: int
+    score: Annotated[int, Field(ge=0, le=10)]
     strengths: list[str]
     gaps: list[str]
     missing_points: list[str]
-    suggested_addition: str
-    follow_up_question: str | None
+    suggested_addition: str | None
+    follow_up_question: str
 
 response = await client.messages.parse(
     model="claude-sonnet-4-6",
