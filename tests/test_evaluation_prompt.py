@@ -1,0 +1,74 @@
+from core.evaluation.prompt import build_evaluation_prompt
+from core.models import UserProfile
+
+
+def test_prompt_contains_question() -> None:
+    prompt = build_evaluation_prompt(
+        question="What is the role of mitochondria?",
+        answer="They produce energy.",
+        chunks=["Some context."],
+        profile=UserProfile(experience_level="beginner"),
+    )
+    assert "What is the role of mitochondria?" in prompt
+
+
+def test_prompt_contains_answer() -> None:
+    prompt = build_evaluation_prompt(
+        question="What is X?",
+        answer="X is a unique answer string.",
+        chunks=["Some context."],
+        profile=UserProfile(experience_level="beginner"),
+    )
+    assert "X is a unique answer string." in prompt
+
+
+def test_prompt_contains_chunks_in_context_tags() -> None:
+    chunks = ["Chunk alpha.", "Chunk beta."]
+    prompt = build_evaluation_prompt(
+        question="Q?",
+        answer="A.",
+        chunks=chunks,
+        profile=UserProfile(experience_level="beginner"),
+    )
+    context_start = prompt.index("<context>")
+    context_end = prompt.index("</context>")
+    context_block = prompt[context_start:context_end]
+    assert "Chunk alpha." in context_block
+    assert "Chunk beta." in context_block
+
+
+def test_prompt_contains_experience_level() -> None:
+    prompt = build_evaluation_prompt(
+        question="Q?",
+        answer="A.",
+        chunks=["Some context."],
+        profile=UserProfile(experience_level="advanced"),
+    )
+    assert "advanced" in prompt
+
+
+def test_prompt_instructs_honesty_not_encouragement() -> None:
+    prompt = build_evaluation_prompt(
+        question="Q?",
+        answer="A.",
+        chunks=["Some context."],
+        profile=UserProfile(experience_level="beginner"),
+    )
+    lower = prompt.lower()
+    assert "honest" in lower
+    assert "encouraging" in lower or "encouragement" in lower
+
+
+def test_prompt_uses_xml_tags() -> None:
+    prompt = build_evaluation_prompt(
+        question="Q?",
+        answer="A.",
+        chunks=["Some context."],
+        profile=UserProfile(experience_level="beginner"),
+    )
+    assert "<context>" in prompt
+    assert "</context>" in prompt
+    assert "<instructions>" in prompt
+    assert "</instructions>" in prompt
+    assert "<learner>" in prompt
+    assert "</learner>" in prompt
