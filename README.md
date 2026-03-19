@@ -94,7 +94,7 @@ make ingest context=biology files=contexts/biology/notes.md
 ### 3. Generate a question
 
 Retrieves relevant chunks and asks Claude to generate a practice question.
-Requires `ANTHROPIC_API_KEY` to be set in your environment.
+Requires `ANTHROPIC_API_KEY` set in your environment (copy `.env.example` to `.env`).
 
 ```bash
 make question context=<name> query="<topic>"
@@ -108,12 +108,14 @@ Use `--experience-level` to tailor the question to the learner:
 uv run learn question biology "what is the role of mitochondria" --experience-level beginner
 ```
 
-### Debugging retrieval
+### Inspect the prompt without calling the API
 
-To inspect the prompt that will be sent to Claude without calling the API:
+Useful for verifying retrieval quality before spending API credits:
 
 ```bash
 make prompt context=<name> query="<topic>"
+# e.g.
+make prompt context=biology query="what is the role of mitochondria"
 ```
 
 ## Running checks
