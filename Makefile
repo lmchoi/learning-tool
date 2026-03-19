@@ -1,22 +1,28 @@
-.PHONY: ingest prompt question evaluate checks test
+.PHONY: ingest prompt question evaluate practice checks test help
 
-ingest:
+help:  ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-12s %s\n", $$1, $$2}'
+
+ingest:  ## Ingest files into a context  — context=<name> files=<paths>
 	uv run learn ingest-context $(context) $(files)
 
-prompt:
+prompt:  ## Print the question prompt without calling the API  — context=<name> query=<topic>
 	uv run learn question-prompt $(context) "$(query)"
 
-question:
+question:  ## Generate a single practice question  — context=<name> query=<topic>
 	uv run learn question $(context) "$(query)"
 
-evaluate:
+evaluate:  ## Evaluate an answer  — context=<name> query=<topic> question=<q> answer=<a>
 	uv run learn evaluate $(context) "$(query)" "$(question)" "$(answer)"
 
-checks:
+practice:  ## Interactive practice loop  — context=<name> query=<topic>
+	uv run learn practice $(context) "$(query)"
+
+checks:  ## Run ruff, mypy, and pytest
 	uv run ruff check .
 	uv run ruff format --check .
 	uv run mypy .
 	uv run pytest
 
-test:
+test:  ## Run tests only
 	uv run pytest
