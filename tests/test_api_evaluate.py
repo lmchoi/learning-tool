@@ -49,6 +49,14 @@ def test_post_evaluate_returns_200(client: TestClient, mock_retriever: MagicMock
     assert response.json()["strengths"] == ["Good point."]
 
 
+def test_post_evaluate_returns_422_when_body_incomplete(client: TestClient) -> None:
+    response = client.post(
+        "/contexts/biology/evaluate",
+        json={"query": "mitochondria", "question": "What is it?"},  # missing answer
+    )
+    assert response.status_code == 422
+
+
 def test_post_evaluate_returns_404_for_unknown_context(
     client: TestClient, mock_retriever: MagicMock
 ) -> None:
