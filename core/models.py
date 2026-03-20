@@ -13,12 +13,6 @@ class Question(BaseModel):
     text: str
 
 
-class EvaluateRequest(BaseModel):
-    query: str = Field(description="RAG retrieval query — used to find relevant context chunks")
-    question: str
-    answer: str
-
-
 class EvaluationResult(BaseModel):
     score: Annotated[int, Field(ge=0, le=10)]
     strengths: list[str]
