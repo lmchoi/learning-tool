@@ -394,6 +394,7 @@ source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
     { name = "fastapi" },
+    { name = "jinja2" },
     { name = "numpy" },
     { name = "pyyaml" },
     { name = "sentence-transformers" },
@@ -416,6 +417,7 @@ dev = [
 requires-dist = [
     { name = "anthropic", specifier = ">=0.86.0" },
     { name = "fastapi", specifier = ">=0.135.1" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "numpy", specifier = ">=2.4.3" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "sentence-transformers", specifier = ">=5.3.0" },
