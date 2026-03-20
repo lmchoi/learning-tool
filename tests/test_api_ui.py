@@ -40,3 +40,51 @@ def test_get_ui_includes_context_name(client: TestClient) -> None:
     response = client.get("/ui/my-context")
 
     assert "my-context" in response.text
+
+
+def test_get_question_fragment_returns_200(client: TestClient, mock_retriever: MagicMock) -> None:
+    from unittest.mock import AsyncMock
+
+    from core.models import Question
+
+    mock_retriever.retrieve.return_value = [("chunk", 0.9)]
+    with patch(
+        "api.main.generate_question", new=AsyncMock(return_value=Question(text="What is X?"))
+    ):
+        response = client.get("/ui/my-context/question?query=topic")
+
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+
+def test_get_question_fragment_contains_question_text(
+    client: TestClient, mock_retriever: MagicMock
+) -> None:
+    from unittest.mock import AsyncMock
+
+    from core.models import Question
+
+    mock_retriever.retrieve.return_value = [("chunk", 0.9)]
+    with patch(
+        "api.main.generate_question", new=AsyncMock(return_value=Question(text="What is X?"))
+    ):
+        response = client.get("/ui/my-context/question?query=topic")
+
+    assert "What is X?" in response.text
+
+
+def test_get_question_fragment_contains_answer_form(
+    client: TestClient, mock_retriever: MagicMock
+) -> None:
+    from unittest.mock import AsyncMock
+
+    from core.models import Question
+
+    mock_retriever.retrieve.return_value = [("chunk", 0.9)]
+    with patch(
+        "api.main.generate_question", new=AsyncMock(return_value=Question(text="What is X?"))
+    ):
+        response = client.get("/ui/my-context/question?query=topic")
+
+    assert "hx-post" in response.text
+    assert "textarea" in response.text
