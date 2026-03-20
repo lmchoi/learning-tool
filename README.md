@@ -62,6 +62,16 @@ taken — not because it's needed, but because understanding it is the point.
 The `docs/` directory captures architectural decisions, engineering conventions,
 and concepts encountered along the way.
 
+### Capturing learnings as you build
+
+`docs/learnings/` holds reference notes — concepts encountered while building,
+with code examples. `contexts/user/` holds a learner profile — what you know
+and don't yet, which drives question difficulty and how explanations are pitched.
+
+Run `/update-notes` at the end of a Claude Code session to keep both up to date.
+The command checks what was covered in the conversation, updates existing notes,
+and proposes new topic files if something doesn't have a home yet.
+
 ## Prerequisites
 
 - Python 3.13+
