@@ -63,6 +63,19 @@ uv run pytest
 - `core/` — the tool, domain agnostic
 - `contexts/` — pluggable learning contexts, gitignored
 
+## GitHub Milestones
+
+Issues are organised into milestones. When creating a new issue, assign it to the most relevant one.
+
+| Milestone | What belongs there |
+|---|---|
+| **Learning Loop** | Session tracking, question bank, preset/user-entered questions, weak area surfacing — anything that makes the tool adapt to the learner over time |
+| **Observability** | LLM call logging, Langfuse integration, annotation and feedback collection on questions/evaluations |
+| **Model Control** | Provider abstraction, per-task model defaults, model visibility in UI, user-selectable models |
+| **Deployment** | Railway deploy, HTTP ingest endpoint, README/docs needed before going live |
+
+Issues that don't fit a milestone (housekeeping, bug fixes, warnings) can be left unassigned.
+
 ## Memory
 
 Claude memory files are checked into `.claude/memory/`. On a new machine, symlink them into the project memory path:
