@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from anthropic import AsyncAnthropic
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Form, HTTPException
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
@@ -55,6 +55,30 @@ async def get_question_fragment(request: Request, context_name: str, query: str)
         request,
         "question.html",
         {"context_name": context_name, "question": question.text, "query": query},
+    )
+
+
+@app.post("/ui/{context_name}/evaluate", response_class=HTMLResponse)
+async def post_evaluate_fragment(
+    request: Request,
+    context_name: str,
+    question: str = Form(...),
+    answer: str = Form(...),
+    query: str = Form(...),
+) -> HTMLResponse:
+    try:
+        results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
+        chunks = [chunk for chunk, _ in results]
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
+
+    profile = UserProfile(experience_level="beginner")
+    prompt = build_evaluation_prompt(
+        question=question, answer=answer, chunks=chunks, profile=profile
+    )
+    result = await evaluate_answer(prompt, app.state.client)
+    return templates.TemplateResponse(
+        request, "feedback.html", {"context_name": context_name, "result": result}
     )
 
 
