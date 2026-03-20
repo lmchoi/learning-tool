@@ -13,6 +13,12 @@ class Question(BaseModel):
     text: str
 
 
+class EvaluateRequest(BaseModel):
+    query: str
+    question: str
+    answer: str
+
+
 class EvaluationResult(BaseModel):
     score: Annotated[int, Field(ge=0, le=10)]
     strengths: list[str]
