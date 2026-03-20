@@ -8,7 +8,12 @@
   </head>
   <body>
     <h1>{{ context_name }}</h1>
-    <div id="question-area">
+    <div
+      id="question-area"
+      hx-get="/ui/{{ context_name }}/question?query={{ query | urlencode }}"
+      hx-trigger="load"
+      hx-swap="outerHTML"
+    >
       Loading question...
     </div>
   </body>

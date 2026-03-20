@@ -35,22 +35,29 @@ EVALUATION = EvaluationResult(
 
 
 def test_get_ui_returns_200(client: TestClient) -> None:
-    response = client.get("/ui/my-context")
+    response = client.get("/ui/my-context?query=topic")
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
 
 
 def test_get_ui_includes_htmx(client: TestClient) -> None:
-    response = client.get("/ui/my-context")
+    response = client.get("/ui/my-context?query=topic")
 
     assert "htmx.org" in response.text
 
 
 def test_get_ui_includes_context_name(client: TestClient) -> None:
-    response = client.get("/ui/my-context")
+    response = client.get("/ui/my-context?query=topic")
 
     assert "my-context" in response.text
+
+
+def test_get_ui_triggers_question_load_on_page_load(client: TestClient) -> None:
+    response = client.get("/ui/my-context?query=topic")
+
+    assert "hx-get" in response.text
+    assert "hx-trigger" in response.text
 
 
 def test_get_question_fragment_returns_200(client: TestClient, mock_retriever: MagicMock) -> None:
