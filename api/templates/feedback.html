@@ -1,27 +1,28 @@
 <div id="question-area">
-  <p><strong>Score: {{ result.score }} / 10</strong></p>
+  <p class="score">Score: {{ result.score }} / 10</p>
 
   {% if result.strengths %}
-  <p><strong>Strengths</strong></p>
+  <p class="section-heading">Strengths</p>
   <ul>
     {% for item in result.strengths %}<li>{{ item }}</li>{% endfor %}
   </ul>
   {% endif %}
 
   {% if result.gaps %}
-  <p><strong>Gaps</strong></p>
+  <p class="section-heading">Gaps</p>
   <ul>
     {% for item in result.gaps %}<li>{{ item }}</li>{% endfor %}
   </ul>
   {% endif %}
 
   {% if result.suggested_addition %}
-  <p><strong>Suggested addition:</strong> {{ result.suggested_addition }}</p>
+  <p class="suggested-addition">{{ result.suggested_addition }}</p>
   {% endif %}
 
-  <p><strong>Follow-up:</strong> {{ result.follow_up_question }}</p>
+  <p class="follow-up">{{ result.follow_up_question }}</p>
 
   <button
+    class="next"
     hx-get="/ui/{{ context_name }}/question?query={{ result.follow_up_question | urlencode }}"
     hx-target="#question-area"
     hx-swap="outerHTML"
