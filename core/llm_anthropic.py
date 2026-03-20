@@ -24,4 +24,6 @@ class AnthropicAdapter:
             messages=cast(list[MessageParam], messages),
             output_format=output_type,
         )
-        return cast(T, response.parsed_output)
+        if response.parsed_output is None:
+            raise ValueError("LLM response could not be parsed into the expected type")
+        return response.parsed_output
