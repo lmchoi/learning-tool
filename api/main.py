@@ -7,11 +7,12 @@ from pathlib import Path
 from anthropic import AsyncAnthropic
 from fastapi import FastAPI, HTTPException
 
+from api.models import EvaluateRequest, EvaluationResponse
 from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.store import ChunkStore
-from core.models import EvaluateRequest, EvaluationResult, Question, UserProfile
+from core.models import Question, UserProfile
 from core.question.generate import generate_question
 from core.question.prompt import build_question_prompt
 from core.rag.retriever import Retriever
@@ -49,7 +50,7 @@ async def get_question(context_name: str, query: str) -> Question:
 
 
 @app.post("/contexts/{context_name}/evaluate")
-async def post_evaluate(context_name: str, body: EvaluateRequest) -> EvaluationResult:
+async def post_evaluate(context_name: str, body: EvaluateRequest) -> EvaluationResponse:
     try:
         results = await asyncio.to_thread(
             app.state.retriever.retrieve, context_name, body.query, k=5
@@ -62,4 +63,5 @@ async def post_evaluate(context_name: str, body: EvaluateRequest) -> EvaluationR
     prompt = build_evaluation_prompt(
         question=body.question, answer=body.answer, chunks=chunks, profile=profile
     )
-    return await evaluate_answer(prompt, app.state.client)
+    result = await evaluate_answer(prompt, app.state.client)
+    return EvaluationResponse(**result.model_dump())
