@@ -16,6 +16,8 @@ class AnthropicClient(Protocol):
     def messages(self) -> AnthropicMessages: ...
 
 
+# Kept as the Anthropic-side concrete implementation alongside generate_gemini.py.
+# Both are needed before extracting the LLMClient abstraction in #30.
 async def generate_question(prompt: str, client: AnthropicClient) -> Question:
     response = await client.messages.parse(
         model=MODEL,

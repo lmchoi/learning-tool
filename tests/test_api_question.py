@@ -19,6 +19,8 @@ def client(mock_retriever: MagicMock) -> Generator[TestClient]:
     with (
         patch("api.main.SentenceTransformerEmbedder"),
         patch("api.main.AsyncAnthropic"),
+        patch("api.main.genai"),
+        patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
         yield c
@@ -27,7 +29,7 @@ def client(mock_retriever: MagicMock) -> Generator[TestClient]:
 def test_get_question_returns_200(client: TestClient, mock_retriever: MagicMock) -> None:
     question = Question(text="What is the capital of France?")
     mock_retriever.retrieve.return_value = [("chunk one", 0.9), ("chunk two", 0.8)]
-    with patch("api.main.generate_question", new=AsyncMock(return_value=question)):
+    with patch("api.main.generate_question_gemini", new=AsyncMock(return_value=question)):
         response = client.get("/contexts/geography/question?query=capitals")
 
     assert response.status_code == 200

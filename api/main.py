@@ -7,6 +7,7 @@ from pathlib import Path
 from anthropic import AsyncAnthropic
 from fastapi import FastAPI, Form, HTTPException
 from fastapi.templating import Jinja2Templates
+from google import genai
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
 
@@ -16,7 +17,7 @@ from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.store import ChunkStore
 from core.models import Question, UserProfile
-from core.question.generate import generate_question
+from core.question.generate_gemini import generate_question_gemini
 from core.question.prompt import build_question_prompt
 from core.rag.retriever import Retriever
 
@@ -27,7 +28,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     embedder = SentenceTransformerEmbedder()
     store = ChunkStore(store_dir)
     app.state.retriever = Retriever(store=store, embedder=embedder)
-    app.state.client = AsyncAnthropic()
+    if not os.environ.get("GEMINI_API_KEY"):
+        raise ValueError("GEMINI_API_KEY is not set")
+    app.state.anthropic = AsyncAnthropic()
+    app.state.gemini = genai.Client()
     yield
 
 
@@ -52,7 +56,7 @@ async def get_question_fragment(request: Request, context_name: str, query: str)
 
     profile = UserProfile(experience_level="beginner")
     prompt = build_question_prompt(chunks, profile)
-    question = await generate_question(prompt, app.state.client)
+    question = await generate_question_gemini(prompt, app.state.gemini)
     return templates.TemplateResponse(
         request,
         "question.html",
@@ -78,7 +82,7 @@ async def post_evaluate_fragment(
     prompt = build_evaluation_prompt(
         question=question, answer=answer, chunks=chunks, profile=profile
     )
-    result = await evaluate_answer(prompt, app.state.client)
+    result = await evaluate_answer(prompt, app.state.anthropic)
     return templates.TemplateResponse(
         request, "feedback.html", {"context_name": context_name, "result": result}
     )
@@ -99,7 +103,7 @@ async def get_question(context_name: str, query: str) -> Question:
 
     profile = UserProfile(experience_level="beginner")
     prompt = build_question_prompt(chunks, profile)
-    return await generate_question(prompt, app.state.client)
+    return await generate_question_gemini(prompt, app.state.gemini)
 
 
 @app.post("/contexts/{context_name}/evaluate")
@@ -116,5 +120,5 @@ async def post_evaluate(context_name: str, body: EvaluateRequest) -> EvaluationR
     prompt = build_evaluation_prompt(
         question=body.question, answer=body.answer, chunks=chunks, profile=profile
     )
-    result = await evaluate_answer(prompt, app.state.client)
+    result = await evaluate_answer(prompt, app.state.anthropic)
     return EvaluationResponse(**result.model_dump())

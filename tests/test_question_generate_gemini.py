@@ -18,6 +18,7 @@ async def test_passes_prompt_as_contents() -> None:
     client = FakeGeminiClient(parsed=Question(text="Some question?"))
     await generate_question_gemini("my prompt", client)
     assert client.aio.models.last_kwargs["contents"] == "my prompt"
+    assert client.aio.models.last_kwargs["model"] == "gemini-2.5-flash"
 
 
 @pytest.mark.asyncio
