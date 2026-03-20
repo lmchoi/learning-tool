@@ -19,6 +19,8 @@ def client(mock_retriever: MagicMock) -> Generator[TestClient]:
     with (
         patch("api.main.SentenceTransformerEmbedder"),
         patch("api.main.AsyncAnthropic"),
+        patch("api.main.genai"),
+        patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
         yield c

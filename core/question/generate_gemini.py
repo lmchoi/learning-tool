@@ -33,4 +33,5 @@ async def generate_question_gemini(prompt: str, client: GeminiClient) -> Questio
     )
     if response.parsed is None:
         raise ValueError("Gemini response could not be parsed into the expected type")
+    # cast needed: the SDK types response.parsed as Any even when response_schema is set
     return cast(Question, response.parsed)
