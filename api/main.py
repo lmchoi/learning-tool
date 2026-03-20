@@ -12,6 +12,7 @@ from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.store import ChunkStore
+from core.llm_anthropic import AnthropicAdapter
 from core.models import Question, UserProfile
 from core.question.generate import generate_question
 from core.question.prompt import build_question_prompt
@@ -24,7 +25,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     embedder = SentenceTransformerEmbedder()
     store = ChunkStore(store_dir)
     app.state.retriever = Retriever(store=store, embedder=embedder)
-    app.state.client = AsyncAnthropic()
+    app.state.client = AnthropicAdapter(AsyncAnthropic())
     yield
 
 

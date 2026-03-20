@@ -9,6 +9,7 @@ from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.ingest import ingest
 from core.ingestion.store import ChunkStore
+from core.llm_anthropic import AnthropicAdapter
 from core.models import UserProfile
 from core.question.generate import generate_question
 from core.question.prompt import build_question_prompt
@@ -77,7 +78,7 @@ def question(
 ) -> None:
     """Generate a practice question from retrieved chunks using Claude."""
     prompt = _build_prompt(context, query, experience_level, k, store_dir)
-    result = asyncio.run(generate_question(prompt, AsyncAnthropic()))
+    result = asyncio.run(generate_question(prompt, AnthropicAdapter(AsyncAnthropic())))
     print(result.text)
 
 
@@ -103,7 +104,7 @@ def evaluate(
         chunks=chunks,
         profile=profile,
     )
-    result = asyncio.run(evaluate_answer(prompt, AsyncAnthropic()))
+    result = asyncio.run(evaluate_answer(prompt, AnthropicAdapter(AsyncAnthropic())))
     print(f"Score: {result.score}/10")
     if result.strengths:
         print("\nStrengths:")
@@ -138,7 +139,7 @@ def practice(
         raise typer.Exit(code=1)
 
     async def loop() -> None:
-        client = AsyncAnthropic()
+        client = AnthropicAdapter(AsyncAnthropic())
         profile = UserProfile(experience_level=experience_level)
         store = ChunkStore(store_dir)
         embedder = SentenceTransformerEmbedder()
