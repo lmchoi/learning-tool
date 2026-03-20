@@ -14,7 +14,7 @@ class Question(BaseModel):
 
 
 class EvaluateRequest(BaseModel):
-    query: str
+    query: str = Field(description="RAG retrieval query — used to find relevant context chunks")
     question: str
     answer: str
 
