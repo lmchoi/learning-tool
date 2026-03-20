@@ -63,6 +63,14 @@ uv run pytest
 - `core/` — the tool, domain agnostic
 - `contexts/` — pluggable learning contexts, gitignored
 
+## Memory
+
+Claude memory files are checked into `.claude/memory/`. On a new machine, symlink them into the project memory path:
+
+```bash
+ln -s $(pwd)/.claude/memory ~/.claude/projects/$(pwd | sed 's|/|-|g' | sed 's|^-||')/memory
+```
+
 ## What to Read First
 
 Read `something.md` for full project brief, architecture, data models, and build order.
