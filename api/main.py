@@ -6,6 +6,9 @@ from pathlib import Path
 
 from anthropic import AsyncAnthropic
 from fastapi import FastAPI, HTTPException
+from fastapi.templating import Jinja2Templates
+from starlette.requests import Request
+from starlette.responses import HTMLResponse
 
 from api.models import EvaluateRequest, EvaluationResponse
 from core.evaluation.evaluate import evaluate_answer
@@ -29,6 +32,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(lifespan=lifespan)
+templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+
+
+@app.get("/ui/{context_name}", response_class=HTMLResponse)
+async def get_ui(request: Request, context_name: str) -> HTMLResponse:
+    return templates.TemplateResponse(request, "practice.html", {"context_name": context_name})
 
 
 @app.get("/health")
