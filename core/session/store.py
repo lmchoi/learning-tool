@@ -39,12 +39,12 @@ class SessionStore:
     def start_session(self) -> str:
         """Create a new session and return its ID."""
         session_id = str(uuid.uuid4())
-        self.create_session(session_id, datetime.now(UTC).isoformat())
+        self._create_session(session_id, datetime.now(UTC).isoformat())
         return session_id
 
     def record(self, session_id: str, question_text: str, answer_text: str, score: int) -> None:
         """Record an attempt with the current timestamp."""
-        self.add_attempt(
+        self._add_attempt(
             QuestionAttempt(
                 session_id=session_id,
                 question_text=question_text,
@@ -54,14 +54,14 @@ class SessionStore:
             )
         )
 
-    def create_session(self, session_id: str, started_at: str) -> None:
+    def _create_session(self, session_id: str, started_at: str) -> None:
         with sqlite3.connect(self._db_path) as conn:
             conn.execute(
                 "INSERT INTO sessions (session_id, context, started_at) VALUES (?, ?, ?)",
                 (session_id, self._context, started_at),
             )
 
-    def add_attempt(self, attempt: QuestionAttempt) -> None:
+    def _add_attempt(self, attempt: QuestionAttempt) -> None:
         with sqlite3.connect(self._db_path) as conn:
             conn.execute(
                 "INSERT INTO attempts (session_id, question_text, answer_text, score, timestamp)"
