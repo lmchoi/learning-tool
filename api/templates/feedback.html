@@ -23,7 +23,7 @@
 
   <button
     class="next"
-    hx-get="/ui/{{ context_name }}/question?query={{ result.follow_up_question | urlencode }}"
+    hx-get="/ui/{{ context_name }}/question?query={{ result.follow_up_question | urlencode }}&session_id={{ session_id }}"
     hx-target="#question-area"
     hx-swap="outerHTML"
   >

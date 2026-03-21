@@ -16,10 +16,13 @@ def mock_retriever() -> Generator[MagicMock]:
 
 @pytest.fixture()
 def client(mock_retriever: MagicMock) -> Generator[TestClient]:
+    mock_session_store = MagicMock()
+    mock_session_store.start_session.return_value = "test-session-id"
     with (
         patch("api.main.SentenceTransformerEmbedder"),
         patch("api.main.AsyncAnthropic"),
         patch("api.main.genai"),
+        patch("api.main.SessionStore", return_value=mock_session_store),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
@@ -67,7 +70,7 @@ def test_get_question_fragment_returns_200(client: TestClient, mock_retriever: M
     with patch(
         "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
     ):
-        response = client.get("/ui/my-context/question?query=topic")
+        response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
@@ -80,7 +83,7 @@ def test_get_question_fragment_contains_question_text(
     with patch(
         "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
     ):
-        response = client.get("/ui/my-context/question?query=topic")
+        response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
     assert "What is X?" in response.text
 
@@ -92,7 +95,7 @@ def test_get_question_fragment_contains_answer_form(
     with patch(
         "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
     ):
-        response = client.get("/ui/my-context/question?query=topic")
+        response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
     assert "hx-post" in response.text
     assert "textarea" in response.text
@@ -105,7 +108,7 @@ def test_get_question_fragment_passes_query_to_form(
     with patch(
         "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
     ):
-        response = client.get("/ui/my-context/question?query=topic")
+        response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
     assert 'name="query"' in response.text
     assert 'value="topic"' in response.text
@@ -116,7 +119,12 @@ def test_post_evaluate_fragment_returns_200(client: TestClient, mock_retriever: 
     with patch("api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
         response = client.post(
             "/ui/my-context/evaluate",
-            data={"question": "What is X?", "answer": "It is Y.", "query": "topic"},
+            data={
+                "question": "What is X?",
+                "answer": "It is Y.",
+                "query": "topic",
+                "session_id": "test-session-id",
+            },
         )
 
     assert response.status_code == 200
@@ -130,7 +138,12 @@ def test_post_evaluate_fragment_contains_score(
     with patch("api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
         response = client.post(
             "/ui/my-context/evaluate",
-            data={"question": "What is X?", "answer": "It is Y.", "query": "topic"},
+            data={
+                "question": "What is X?",
+                "answer": "It is Y.",
+                "query": "topic",
+                "session_id": "test-session-id",
+            },
         )
 
     assert "8" in response.text
@@ -145,7 +158,12 @@ def test_post_evaluate_fragment_uses_query_for_retrieval(
     with patch("api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
         client.post(
             "/ui/my-context/evaluate",
-            data={"question": "What is X?", "answer": "It is Y.", "query": "topic"},
+            data={
+                "question": "What is X?",
+                "answer": "It is Y.",
+                "query": "topic",
+                "session_id": "test-session-id",
+            },
         )
 
     mock_retriever.retrieve.assert_called_once_with("my-context", "topic", k=5)
@@ -155,7 +173,7 @@ def test_get_question_fragment_returns_404_for_unknown_context(
     client: TestClient, mock_retriever: MagicMock
 ) -> None:
     mock_retriever.retrieve.side_effect = FileNotFoundError("no store")
-    response = client.get("/ui/unknown/question?query=topic")
+    response = client.get("/ui/unknown/question?query=topic&session_id=test-session-id")
 
     assert response.status_code == 404
     assert "unknown" in response.json()["detail"]
@@ -167,7 +185,12 @@ def test_post_evaluate_fragment_returns_404_for_unknown_context(
     mock_retriever.retrieve.side_effect = FileNotFoundError("no store")
     response = client.post(
         "/ui/unknown/evaluate",
-        data={"question": "What is X?", "answer": "It is Y.", "query": "topic"},
+        data={
+            "question": "What is X?",
+            "answer": "It is Y.",
+            "query": "topic",
+            "session_id": "test-session-id",
+        },
     )
 
     assert response.status_code == 404
