@@ -201,6 +201,10 @@ async def post_report_evaluation(
     return templates.TemplateResponse(request, "evaluation_reported.html", {})
 
 
+_VALID_TARGET_TYPES = {"question", "evaluation"}
+_VALID_SENTIMENTS = {"up", "down"}
+
+
 @app.get("/admin/annotations", response_class=HTMLResponse)
 async def get_admin_annotations(
     request: Request,
@@ -208,16 +212,17 @@ async def get_admin_annotations(
     target_type: str | None = None,
     sentiment: str | None = None,
 ) -> HTMLResponse:
-    import json as _json
-
+    if target_type is not None and target_type not in _VALID_TARGET_TYPES:
+        raise HTTPException(
+            status_code=422, detail=f"target_type must be one of {_VALID_TARGET_TYPES}"
+        )
+    if sentiment is not None and sentiment not in _VALID_SENTIMENTS:
+        raise HTTPException(status_code=422, detail=f"sentiment must be one of {_VALID_SENTIMENTS}")
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    raw = session_store.load_annotations(
-        target_type=target_type or None,
-        sentiment=sentiment or None,
-    )
+    raw = session_store.load_annotations(target_type=target_type, sentiment=sentiment)
     for ann in raw:
         rj = ann.get("result_json")
-        ann["result"] = _json.loads(rj) if isinstance(rj, str) else None
+        ann["result"] = json.loads(rj) if isinstance(rj, str) else None
     return templates.TemplateResponse(
         request,
         "admin_annotations.html",
