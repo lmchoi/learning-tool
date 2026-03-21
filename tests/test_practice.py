@@ -5,6 +5,7 @@ from typer.testing import CliRunner
 
 from cli.main import app
 from core.models import EvaluationResult, Question
+from core.session.store import SessionStore
 
 runner = CliRunner()
 
@@ -89,3 +90,33 @@ def test_practice_auto_follows_up_without_prompting(
     assert "Score: 5/10" in result.output
     assert "Score: 8/10" in result.output
     assert mock_evaluate.call_count == 2
+
+
+@patch("cli.main.SentenceTransformerEmbedder")
+@patch("cli.main.Retriever")
+@patch("cli.main.evaluate_answer", new_callable=AsyncMock)
+@patch("cli.main.generate_question", new_callable=AsyncMock)
+def test_practice_creates_sessions_db(
+    mock_generate: AsyncMock,
+    mock_evaluate: AsyncMock,
+    mock_retriever_cls: MagicMock,
+    mock_embedder_cls: MagicMock,
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "test-context").mkdir()
+    mock_generate.return_value = Question(text="What is the role?")
+    mock_evaluate.return_value = _evaluation(score=8)
+    mock_retriever_cls.return_value = _fake_retriever(["some chunk"])
+
+    runner.invoke(
+        app,
+        ["practice", "test-context", "responsibilities", "--store-dir", str(tmp_path)],
+        input="my answer\nn\n",
+    )
+
+    assert (tmp_path / "test-context" / "sessions.db").exists()
+    store = SessionStore(tmp_path, "test-context")
+    sessions = store.load_sessions()
+    assert len(sessions) == 1
+    assert len(sessions[0].attempts) == 1
+    assert sessions[0].attempts[0].score == 8

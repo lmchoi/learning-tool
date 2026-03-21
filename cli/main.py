@@ -13,6 +13,7 @@ from core.models import UserProfile
 from core.question.generate import generate_question
 from core.question.prompt import build_question_prompt
 from core.rag.retriever import Retriever
+from core.session.store import SessionStore
 
 app = typer.Typer()
 
@@ -140,12 +141,15 @@ def practice(
     async def loop() -> None:
         client = AsyncAnthropic()
         profile = UserProfile(experience_level=experience_level)
-        store = ChunkStore(store_dir)
+        chunk_store = ChunkStore(store_dir)
         embedder = SentenceTransformerEmbedder()
-        retriever = Retriever(store=store, embedder=embedder)
+        retriever = Retriever(store=chunk_store, embedder=embedder)
         # Chunks are retrieved once per topic query and reused across follow-ups,
         # since follow-up questions target gaps within the same retrieved context.
         chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
+
+        session_store = SessionStore(store_dir, context)
+        session_id = session_store.start_session()
 
         next_question: str | None = None
         while True:
@@ -164,6 +168,8 @@ def practice(
                 profile=profile,
             )
             evaluation = await evaluate_answer(eval_prompt, client)
+
+            session_store.record(session_id, next_question, evaluation.score)
 
             print(f"\nScore: {evaluation.score}/10")
             if evaluation.strengths:
