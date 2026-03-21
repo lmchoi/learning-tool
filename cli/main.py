@@ -1,4 +1,5 @@
 import asyncio
+import os
 from pathlib import Path
 
 import typer
@@ -17,7 +18,7 @@ from core.session.store import SessionStore
 
 app = typer.Typer()
 
-DEFAULT_STORE = Path("contexts/store")
+DEFAULT_STORE = Path(os.environ.get("STORE_DIR", "contexts/store"))
 
 
 @app.command()
