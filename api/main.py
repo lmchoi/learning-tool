@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         raise ValueError("GEMINI_API_KEY is not set")
     app.state.anthropic = AsyncAnthropic()
     app.state.gemini = genai.Client()
+    app.state.session_stores = {}  # dict[str, SessionStore], keyed by context name
     yield
 
 
@@ -41,9 +42,17 @@ app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
+def _get_session_store(
+    cache: dict[str, SessionStore], store_dir: Path, context: str
+) -> SessionStore:
+    if context not in cache:
+        cache[context] = SessionStore(store_dir, context)
+    return cache[context]
+
+
 @app.get("/ui/{context_name}", response_class=HTMLResponse)
 async def get_ui(request: Request, context_name: str, query: str) -> HTMLResponse:
-    session_store = SessionStore(app.state.store_dir, context_name)
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     session_id = session_store.start_session()
     return templates.TemplateResponse(
         request,
@@ -97,7 +106,7 @@ async def post_evaluate_fragment(
         question=question, answer=answer, chunks=chunks, profile=profile
     )
     result = await evaluate_answer(prompt, app.state.anthropic)
-    session_store = SessionStore(app.state.store_dir, context_name)
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     attempt_id = session_store.record(session_id, question, answer, result.score)
     return templates.TemplateResponse(
         request,
@@ -137,7 +146,7 @@ async def post_annotate(
 ) -> HTMLResponse:
     if sentiment not in ("up", "down"):
         raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
-    session_store = SessionStore(app.state.store_dir, context_name)
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     session_store.record_annotation(attempt_id, "question", sentiment, comment or None)
     return templates.TemplateResponse(
         request,

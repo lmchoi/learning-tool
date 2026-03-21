@@ -1,11 +1,13 @@
 from collections.abc import Generator
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
+from api.main import _get_session_store, app
 from core.models import EvaluationResult, Question
+from core.session.store import SessionStore
 
 
 @pytest.fixture()
@@ -195,3 +197,31 @@ def test_post_evaluate_fragment_returns_404_for_unknown_context(
 
     assert response.status_code == 404
     assert "unknown" in response.json()["detail"]
+
+
+def test_get_session_store_creates_instance_on_first_call(tmp_path: Path) -> None:
+    cache: dict[str, SessionStore] = {}
+
+    store = _get_session_store(cache, tmp_path, "python")
+
+    assert isinstance(store, SessionStore)
+    assert "python" in cache
+
+
+def test_get_session_store_returns_same_instance_on_second_call(tmp_path: Path) -> None:
+    cache: dict[str, SessionStore] = {}
+
+    first = _get_session_store(cache, tmp_path, "python")
+    second = _get_session_store(cache, tmp_path, "python")
+
+    assert first is second
+
+
+def test_get_session_store_creates_separate_instances_per_context(tmp_path: Path) -> None:
+    cache: dict[str, SessionStore] = {}
+
+    python_store = _get_session_store(cache, tmp_path, "python")
+    sql_store = _get_session_store(cache, tmp_path, "sql")
+
+    assert python_store is not sql_store
+    assert len(cache) == 2
