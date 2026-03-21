@@ -2,7 +2,7 @@ from typing import Any, Protocol, cast
 
 from core.models import Question
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-haiku-4-5"
 
 
 class AnthropicMessages(Protocol):
