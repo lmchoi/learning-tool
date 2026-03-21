@@ -163,10 +163,14 @@ class SessionStore:
         self,
         target_type: str | None = None,
         sentiment: str | None = None,
+        annotation_id: int | None = None,
     ) -> list[dict[str, object]]:
         """Return annotations joined with attempt context, newest first."""
         filters = []
         params: list[object] = []
+        if annotation_id is not None:
+            filters.append("a.id = ?")
+            params.append(annotation_id)
         if target_type is not None:
             filters.append("a.target_type = ?")
             params.append(target_type)
@@ -223,6 +227,11 @@ class SessionStore:
                     }
                 )
             return result
+
+    def load_annotation(self, annotation_id: int) -> dict[str, object] | None:
+        """Return a single annotation by id, or None if not found."""
+        results = self.load_annotations(annotation_id=annotation_id)
+        return results[0] if results else None
 
     def _create_session(self, session_id: str, started_at: str) -> None:
         with sqlite3.connect(self._db_path) as conn:
