@@ -37,8 +37,10 @@ class SentenceTransformerEmbedder:
     DEFAULT_MODEL = "all-MiniLM-L6-v2"
 
     def __init__(self, model: str = DEFAULT_MODEL) -> None:
-        logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
-        logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+        import transformers
+
+        logging.getLogger("huggingface_hub.utils._http").setLevel(logging.ERROR)
+        transformers.utils.logging.set_verbosity_error()  # type: ignore[no-untyped-call]
 
         from sentence_transformers import SentenceTransformer
 
