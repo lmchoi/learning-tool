@@ -10,7 +10,12 @@
     <input type="hidden" name="question" value="{{ question }}" />
     <input type="hidden" name="query" value="{{ query }}" />
     <input type="hidden" name="session_id" value="{{ session_id }}" />
-    <textarea name="answer" rows="5" placeholder="Your answer..."></textarea>
+    <textarea
+      name="answer"
+      rows="5"
+      placeholder="Your answer..."
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit();}"
+    ></textarea>
     <br />
     <button type="submit" class="submit">Submit</button>
     <span class="htmx-indicator"> Evaluating...</span>
