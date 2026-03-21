@@ -23,7 +23,7 @@ practice:  ## Interactive practice loop  — context=<name> query=<topic>
 	uv run learn practice $(context) "$(query)"
 
 serve:  ## Start the API server
-	uv run uvicorn api.main:app --reload
+	uv run uvicorn api.main:app --reload --reload-dir api --reload-dir core
 
 checks:  ## Run ruff, mypy, and pytest
 	uv run ruff check .
