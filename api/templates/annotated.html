@@ -2,4 +2,10 @@
   <span class="annotation-saved">
     {% if sentiment == "up" %}👍{% else %}👎{% endif %} Saved
   </span>
+  <button
+    class="thumb {% if sentiment == 'up' %}thumb-down{% else %}thumb-up{% endif %}"
+    hx-get="/annotate/form?question_id={{ question_id }}&context_name={{ context_name }}&sentiment={% if sentiment == 'up' %}down{% else %}up{% endif %}"
+    hx-target="#annotation-area"
+    hx-swap="outerHTML"
+  >{% if sentiment == "up" %}👎{% else %}👍{% endif %}</button>
 </div>
