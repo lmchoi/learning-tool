@@ -188,7 +188,10 @@ class SessionStore:
                 att.score,
                 att.result_json
             FROM annotations a
-            LEFT JOIN attempts att ON att.question_id = a.question_id
+            LEFT JOIN attempts att ON (
+                (a.question_id IS NOT NULL AND att.question_id = a.question_id)
+                OR (a.question_id IS NULL AND a.attempt_id IS NOT NULL AND att.id = a.attempt_id)
+            )
             {where}
             ORDER BY a.id DESC
         """
