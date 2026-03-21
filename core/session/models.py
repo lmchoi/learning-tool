@@ -8,6 +8,7 @@ class QuestionAttempt:
     answer_text: str
     score: int
     timestamp: str
+    question_id: str | None = None
 
 
 @dataclass

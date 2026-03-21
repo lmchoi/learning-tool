@@ -66,19 +66,27 @@ def test_record_returns_attempt_id(tmp_path: Path) -> None:
     assert attempt_id >= 1
 
 
-def test_record_annotation_sentiment_only(tmp_path: Path) -> None:
+def test_record_stores_question_id(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
     session_id = store.start_session()
-    attempt_id = store.record(session_id, "Q?", "A.", 5)
+    store.record(session_id, "Q?", "A.", 5, question_id="test-qid")
 
-    store.record_annotation(attempt_id, "question", "up")
+    sessions = store.load_sessions()
+    assert sessions[0].attempts[0].question_id == "test-qid"
+
+
+def test_record_annotation_sentiment_only(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    store.start_session()
+
+    store.record_annotation("test-qid", "question", "up")
 
     db_path = tmp_path / "ctx" / "sessions.db"
     with sqlite3.connect(db_path) as conn:
         row = conn.execute(
-            "SELECT attempt_id, target_type, sentiment, comment, created_at FROM annotations"
+            "SELECT question_id, target_type, sentiment, comment, created_at FROM annotations"
         ).fetchone()
-    assert row[0] == attempt_id
+    assert row[0] == "test-qid"
     assert row[1] == "question"
     assert row[2] == "up"
     assert row[3] is None
@@ -87,10 +95,9 @@ def test_record_annotation_sentiment_only(tmp_path: Path) -> None:
 
 def test_record_annotation_with_comment(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
-    session_id = store.start_session()
-    attempt_id = store.record(session_id, "Q?", "A.", 5)
+    store.start_session()
 
-    store.record_annotation(attempt_id, "question", "down", comment="Confusing wording")
+    store.record_annotation("test-qid", "question", "down", comment="Confusing wording")
 
     db_path = tmp_path / "ctx" / "sessions.db"
     with sqlite3.connect(db_path) as conn:
@@ -100,17 +107,15 @@ def test_record_annotation_with_comment(tmp_path: Path) -> None:
 
 def test_record_annotation_invalid_sentiment(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
-    session_id = store.start_session()
-    attempt_id = store.record(session_id, "Q?", "A.", 5)
+    store.start_session()
 
     with pytest.raises(sqlite3.IntegrityError):
-        store.record_annotation(attempt_id, "question", "meh")
+        store.record_annotation("test-qid", "question", "meh")
 
 
 def test_record_annotation_invalid_target_type(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
-    session_id = store.start_session()
-    attempt_id = store.record(session_id, "Q?", "A.", 5)
+    store.start_session()
 
     with pytest.raises(sqlite3.IntegrityError):
-        store.record_annotation(attempt_id, "banana", "up")
+        store.record_annotation("test-qid", "banana", "up")
