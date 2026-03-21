@@ -33,6 +33,7 @@ class SessionStore:
 
     def _init_db(self) -> None:
         with sqlite3.connect(self._db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
             conn.executescript(_SCHEMA)
 
     def start_session(self) -> str:
