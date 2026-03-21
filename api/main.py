@@ -98,7 +98,9 @@ async def post_evaluate_fragment(
     answer: str = Form(...),
     query: str = Form(...),
     session_id: str = Form(...),
-    question_id: str | None = Form(default=None),
+    question_id: str | None = Form(
+        default=None
+    ),  # always sent by question.html; None only if called outside the UI
 ) -> HTMLResponse:
     try:
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)

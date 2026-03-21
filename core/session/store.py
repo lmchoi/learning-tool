@@ -57,6 +57,10 @@ class SessionStore:
             row[1] for row in conn.execute("PRAGMA table_info(annotations)").fetchall()
         }
         if "question_id" not in annotations_cols:
+            # Recreate annotations to change UNIQUE key from (attempt_id, target_type)
+            # to (question_id, target_type) and make attempt_id nullable.
+            # This drops existing annotation data — acceptable for dev, revisit before
+            # any production deployment with real annotation history.
             conn.executescript(
                 "DROP TABLE annotations;"
                 "CREATE TABLE annotations ("
