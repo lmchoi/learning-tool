@@ -28,6 +28,9 @@ Experience level: {profile.experience_level}
 
 <instructions>
 Evaluate the answer honestly. Do not be encouraging or inflate the score.
-Identify what the learner got right, what they missed, and what they could add.
+Identify what the learner got right and what factual points they missed or got wrong.
+Only flag something as a gap if it affects the correctness or meaningful completeness of the answer.
+Do not penalise for not citing sources, not quoting the material, or not explaining
+their reasoning — only the substance matters.
 Suggest a follow-up question that probes a gap in their understanding.
 </instructions>"""
