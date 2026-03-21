@@ -119,3 +119,123 @@ def test_record_annotation_invalid_target_type(tmp_path: Path) -> None:
 
     with pytest.raises(sqlite3.IntegrityError):
         store.record_annotation("test-qid", "banana", "up")
+
+
+def test_record_stores_result_json(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q?", "A.", 7, result_json='{"score": 7}')
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT result_json FROM attempts").fetchone()
+    assert row[0] == '{"score": 7}'
+
+
+def test_load_annotations_returns_joined_data(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    attempt_id = store.record(
+        session_id, "Q?", "A.", 6, question_id="qid-1", result_json='{"score": 6}'
+    )
+    store.record_chunks(attempt_id, ["chunk a", "chunk b"])
+    store.record_annotation("qid-1", "evaluation", "down", comment="Off target")
+
+    annotations = store.load_annotations()
+
+    assert len(annotations) == 1
+    ann = annotations[0]
+    assert ann["question_text"] == "Q?"
+    assert ann["answer_text"] == "A."
+    assert ann["score"] == 6
+    assert ann["result_json"] == '{"score": 6}'
+    assert ann["target_type"] == "evaluation"
+    assert ann["sentiment"] == "down"
+    assert ann["comment"] == "Off target"
+    assert ann["chunks"] == ["chunk a", "chunk b"]
+
+
+def test_load_annotations_filter_by_target_type(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q1?", "A1.", 5, question_id="qid-1")
+    store.record(session_id, "Q2?", "A2.", 7, question_id="qid-2")
+    store.record_annotation("qid-1", "question", "down")
+    store.record_annotation("qid-2", "evaluation", "down", comment="Bad eval")
+
+    results = store.load_annotations(target_type="evaluation")
+    assert len(results) == 1
+    assert results[0]["target_type"] == "evaluation"
+
+
+def test_load_annotations_filter_by_sentiment(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q1?", "A1.", 5, question_id="qid-1")
+    store.record(session_id, "Q2?", "A2.", 9, question_id="qid-2")
+    store.record_annotation("qid-1", "question", "down")
+    store.record_annotation("qid-2", "question", "up")
+
+    results = store.load_annotations(sentiment="up")
+    assert len(results) == 1
+    assert results[0]["sentiment"] == "up"
+
+
+def test_record_chunks_and_load_chunks(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    attempt_id = store.record(session_id, "Q?", "A.", 5)
+
+    store.record_chunks(attempt_id, ["chunk one", "chunk two", "chunk three"])
+
+    loaded = store.load_chunks(attempt_id)
+    assert loaded == ["chunk one", "chunk two", "chunk three"]
+
+
+def test_load_chunks_empty(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    attempt_id = store.record(session_id, "Q?", "A.", 5)
+
+    assert store.load_chunks(attempt_id) == []
+
+
+def test_record_chunks_isolated_per_attempt(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    attempt_a = store.record(session_id, "Q1?", "A1.", 5)
+    attempt_b = store.record(session_id, "Q2?", "A2.", 7)
+
+    store.record_chunks(attempt_a, ["chunk for a"])
+    store.record_chunks(attempt_b, ["chunk for b"])
+
+    assert store.load_chunks(attempt_a) == ["chunk for a"]
+    assert store.load_chunks(attempt_b) == ["chunk for b"]
+
+
+def test_record_annotation_evaluation_target_type(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    store.start_session()
+
+    store.record_annotation("qid-eval", "evaluation", "down", comment="Feedback was wrong")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT target_type, sentiment, comment FROM annotations").fetchone()
+    assert row[0] == "evaluation"
+    assert row[1] == "down"
+    assert row[2] == "Feedback was wrong"
+
+
+def test_record_annotation_unique_per_question_and_target_type(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    store.start_session()
+
+    store.record_annotation("qid-eval", "evaluation", "down", comment="First report")
+    store.record_annotation("qid-eval", "evaluation", "down", comment="Updated report")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        rows = conn.execute("SELECT comment FROM annotations").fetchall()
+    assert len(rows) == 1
+    assert rows[0][0] == "Updated report"
