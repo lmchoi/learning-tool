@@ -20,6 +20,16 @@ CREATE TABLE IF NOT EXISTS attempts (
     score         INTEGER NOT NULL,
     timestamp     TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS annotations (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    attempt_id  INTEGER NOT NULL REFERENCES attempts(id),
+    target_type TEXT NOT NULL CHECK(target_type IN ('question', 'evaluation')),
+    sentiment   TEXT NOT NULL CHECK(sentiment IN ('up', 'down')),
+    comment     TEXT,
+    created_at  TEXT NOT NULL,
+    UNIQUE(attempt_id, target_type)  -- one per attempt; INSERT OR REPLACE means last write wins
+);
 """
 
 
@@ -42,9 +52,9 @@ class SessionStore:
         self._create_session(session_id, datetime.now(UTC).isoformat())
         return session_id
 
-    def record(self, session_id: str, question_text: str, answer_text: str, score: int) -> None:
-        """Record an attempt with the current timestamp."""
-        self._add_attempt(
+    def record(self, session_id: str, question_text: str, answer_text: str, score: int) -> int:
+        """Record an attempt with the current timestamp. Returns the attempt id."""
+        return self._add_attempt(
             QuestionAttempt(
                 session_id=session_id,
                 question_text=question_text,
@@ -54,6 +64,23 @@ class SessionStore:
             )
         )
 
+    def record_annotation(
+        self,
+        attempt_id: int,
+        target_type: str,
+        sentiment: str,
+        comment: str | None = None,
+    ) -> None:
+        """Record a learner annotation (thumbs up/down) on an attempt."""
+        with sqlite3.connect(self._db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute(
+                "INSERT OR REPLACE INTO annotations"
+                " (attempt_id, target_type, sentiment, comment, created_at)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (attempt_id, target_type, sentiment, comment, datetime.now(UTC).isoformat()),
+            )
+
     def _create_session(self, session_id: str, started_at: str) -> None:
         with sqlite3.connect(self._db_path) as conn:
             conn.execute(
@@ -61,9 +88,9 @@ class SessionStore:
                 (session_id, self._context, started_at),
             )
 
-    def _add_attempt(self, attempt: QuestionAttempt) -> None:
+    def _add_attempt(self, attempt: QuestionAttempt) -> int:
         with sqlite3.connect(self._db_path) as conn:
-            conn.execute(
+            cursor = conn.execute(
                 "INSERT INTO attempts (session_id, question_text, answer_text, score, timestamp)"
                 " VALUES (?, ?, ?, ?, ?)",
                 (
@@ -74,6 +101,7 @@ class SessionStore:
                     attempt.timestamp,
                 ),
             )
+            return cursor.lastrowid  # type: ignore[return-value]  # always set after INSERT on autoincrement table
 
     def load_sessions(self) -> list[SessionRecord]:
         with sqlite3.connect(self._db_path) as conn:
