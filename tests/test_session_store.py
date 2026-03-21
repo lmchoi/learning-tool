@@ -1,33 +1,24 @@
 from pathlib import Path
 
-from core.session.models import QuestionAttempt
 from core.session.store import SessionStore
 
 
-def test_create_and_load_session(tmp_path: Path) -> None:
+def test_start_session_returns_id_and_persists(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
-    store.create_session("s1", "2026-03-21T09:00:00")
+    session_id = store.start_session()
 
     sessions = store.load_sessions()
 
     assert len(sessions) == 1
-    assert sessions[0].session_id == "s1"
+    assert sessions[0].session_id == session_id
     assert sessions[0].context == "ctx"
-    assert sessions[0].started_at == "2026-03-21T09:00:00"
     assert sessions[0].attempts == []
 
 
-def test_add_attempt_round_trip(tmp_path: Path) -> None:
+def test_record_round_trip(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
-    store.create_session("s1", "2026-03-21T09:00:00")
-    attempt = QuestionAttempt(
-        session_id="s1",
-        question_text="What is X?",
-        answer_text="It is Y.",
-        score=7,
-        timestamp="2026-03-21T09:01:00",
-    )
-    store.add_attempt(attempt)
+    session_id = store.start_session()
+    store.record(session_id, "What is X?", "It is Y.", 7)
 
     sessions = store.load_sessions()
 
@@ -36,22 +27,14 @@ def test_add_attempt_round_trip(tmp_path: Path) -> None:
     assert loaded.question_text == "What is X?"
     assert loaded.answer_text == "It is Y."
     assert loaded.score == 7
-    assert loaded.timestamp == "2026-03-21T09:01:00"
+    assert loaded.timestamp  # ISO 8601 string, just check it's set
 
 
 def test_multiple_attempts_ordered(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
-    store.create_session("s1", "2026-03-21T09:00:00")
+    session_id = store.start_session()
     for i, q in enumerate(["Q1", "Q2", "Q3"]):
-        store.add_attempt(
-            QuestionAttempt(
-                session_id="s1",
-                question_text=q,
-                answer_text=f"Answer {i}",
-                score=i + 5,
-                timestamp=f"2026-03-21T09:0{i}:00",
-            )
-        )
+        store.record(session_id, q, f"Answer {i}", i + 5)
 
     sessions = store.load_sessions()
     texts = [a.question_text for a in sessions[0].attempts]
@@ -66,7 +49,7 @@ def test_db_created_in_context_dir(tmp_path: Path) -> None:
 def test_different_contexts_isolated(tmp_path: Path) -> None:
     store_a = SessionStore(tmp_path, "ctx-a")
     store_b = SessionStore(tmp_path, "ctx-b")
-    store_a.create_session("s1", "2026-03-21T09:00:00")
+    store_a.start_session()
 
     assert store_b.load_sessions() == []
     assert len(store_a.load_sessions()) == 1
