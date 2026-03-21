@@ -98,11 +98,35 @@ async def post_evaluate_fragment(
     )
     result = await evaluate_answer(prompt, app.state.anthropic)
     session_store = SessionStore(app.state.store_dir, context_name)
-    session_store.record(session_id, question, answer, result.score)
+    attempt_id = session_store.record(session_id, question, answer, result.score)
     return templates.TemplateResponse(
         request,
         "feedback.html",
-        {"context_name": context_name, "result": result, "session_id": session_id},
+        {
+            "context_name": context_name,
+            "result": result,
+            "session_id": session_id,
+            "attempt_id": attempt_id,
+        },
+    )
+
+
+@app.post("/annotate", response_class=HTMLResponse)
+async def post_annotate(
+    request: Request,
+    attempt_id: int = Form(...),
+    context_name: str = Form(...),
+    sentiment: str = Form(...),
+    comment: str | None = Form(default=None),
+) -> HTMLResponse:
+    if sentiment not in ("up", "down"):
+        raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
+    session_store = SessionStore(app.state.store_dir, context_name)
+    session_store.record_annotation(attempt_id, "question", sentiment, comment or None)
+    return templates.TemplateResponse(
+        request,
+        "annotated.html",
+        {"sentiment": sentiment},
     )
 
 
