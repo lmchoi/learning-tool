@@ -1,0 +1,17 @@
+from dataclasses import dataclass
+
+
+@dataclass
+class QuestionAttempt:
+    session_id: str
+    question_text: str
+    score: int
+    timestamp: str
+
+
+@dataclass
+class SessionRecord:
+    session_id: str
+    context: str
+    started_at: str
+    attempts: list[QuestionAttempt]
