@@ -28,7 +28,7 @@ _ANNOTATION = {
 @pytest.fixture()
 def mock_session_store() -> MagicMock:
     store = MagicMock()
-    store.load_annotations.return_value = [_ANNOTATION]
+    store.load_annotation.return_value = _ANNOTATION
     return store
 
 
@@ -74,7 +74,7 @@ def test_escalate_returns_503_when_github_not_configured(
 def test_escalate_returns_404_when_annotation_not_found(
     client_with_github: TestClient, mock_session_store: MagicMock
 ) -> None:
-    mock_session_store.load_annotations.return_value = []
+    mock_session_store.load_annotation.return_value = None
     response = client_with_github.post("/admin/annotations/99/escalate?context_name=ctx")
     assert response.status_code == 404
 

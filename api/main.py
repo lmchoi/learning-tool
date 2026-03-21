@@ -1,10 +1,12 @@
 import asyncio
+import json
 import os
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import httpx
 from anthropic import AsyncAnthropic
 from fastapi import FastAPI, Form, HTTPException
 from fastapi.templating import Jinja2Templates
@@ -235,20 +237,15 @@ async def post_escalate_annotation(
     annotation_id: int,
     context_name: str,
 ) -> HTMLResponse:
-    import json as _json
-
-    import httpx
-
     if not _GITHUB_CONFIGURED:
         raise HTTPException(status_code=503, detail="GitHub escalation is not configured")
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    annotations = session_store.load_annotations()
-    ann = next((a for a in annotations if a["id"] == annotation_id), None)
+    ann = session_store.load_annotation(annotation_id)
     if ann is None:
         raise HTTPException(status_code=404, detail="Annotation not found")
 
     raw_rj = ann.get("result_json")
-    result = _json.loads(raw_rj) if isinstance(raw_rj, str) else {}
+    result = json.loads(raw_rj) if isinstance(raw_rj, str) else {}
     gaps = "\n".join(f"- {g}" for g in result.get("gaps", [])) or "N/A"
     body = (
         f"**Type:** {ann['target_type']}\n"
