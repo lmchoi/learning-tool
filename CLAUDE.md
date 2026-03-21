@@ -61,6 +61,7 @@ uv run pytest
 ## Key Paths
 
 - `core/` — the tool, domain agnostic
+- `core/<domain>/store.py` — storage for that domain (follows `core/ingestion/store.py` precedent; storage lives in the domain layer, not a separate infrastructure layer — see ADR 010)
 - `contexts/` — pluggable learning contexts, gitignored
 
 ## GitHub Milestones
