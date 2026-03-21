@@ -1,3 +1,7 @@
+ENV_FILE ?= $(HOME)/.secrets/.env
+-include $(ENV_FILE)
+export
+
 .PHONY: ingest prompt question evaluate practice serve checks test help
 
 help:  ## Show this help
