@@ -40,19 +40,19 @@ def client(
 def test_post_annotate_valid_up(client: TestClient, mock_session_store: MagicMock) -> None:
     response = client.post(
         "/annotate",
-        data={"attempt_id": "1", "context_name": "ctx", "sentiment": "up"},
+        data={"question_id": "test-qid", "context_name": "ctx", "sentiment": "up"},
     )
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    mock_session_store.record_annotation.assert_called_once_with(1, "question", "up", None)
+    mock_session_store.record_annotation.assert_called_once_with("test-qid", "question", "up", None)
 
 
 def test_post_annotate_valid_down_with_comment(client: TestClient) -> None:
     response = client.post(
         "/annotate",
         data={
-            "attempt_id": "1",
+            "question_id": "test-qid",
             "context_name": "ctx",
             "sentiment": "down",
             "comment": "Confusing question",
@@ -65,7 +65,7 @@ def test_post_annotate_valid_down_with_comment(client: TestClient) -> None:
 def test_post_annotate_invalid_sentiment(client: TestClient) -> None:
     response = client.post(
         "/annotate",
-        data={"attempt_id": "1", "context_name": "ctx", "sentiment": "meh"},
+        data={"question_id": "test-qid", "context_name": "ctx", "sentiment": "meh"},
     )
 
     assert response.status_code == 422
@@ -74,7 +74,16 @@ def test_post_annotate_invalid_sentiment(client: TestClient) -> None:
 def test_post_annotate_response_shows_sentiment(client: TestClient) -> None:
     response = client.post(
         "/annotate",
-        data={"attempt_id": "1", "context_name": "ctx", "sentiment": "up"},
+        data={"question_id": "test-qid", "context_name": "ctx", "sentiment": "up"},
     )
 
     assert "Saved" in response.text
+
+
+def test_post_annotate_response_shows_opposite_thumb(client: TestClient) -> None:
+    response = client.post(
+        "/annotate",
+        data={"question_id": "test-qid", "context_name": "ctx", "sentiment": "up"},
+    )
+
+    assert "👎" in response.text

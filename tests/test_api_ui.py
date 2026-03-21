@@ -78,6 +78,18 @@ def test_get_question_fragment_returns_200(client: TestClient, mock_retriever: M
     assert "text/html" in response.headers["content-type"]
 
 
+def test_get_question_fragment_contains_question_id(
+    client: TestClient, mock_retriever: MagicMock
+) -> None:
+    mock_retriever.retrieve.return_value = [("chunk", 0.9)]
+    with patch(
+        "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
+    ):
+        response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
+
+    assert 'name="question_id"' in response.text
+
+
 def test_get_question_fragment_contains_question_text(
     client: TestClient, mock_retriever: MagicMock
 ) -> None:

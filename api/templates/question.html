@@ -1,5 +1,21 @@
 <div id="question-area">
   <p>{{ question }}</p>
+
+  <div id="annotation-area">
+    <button
+      class="thumb thumb-up"
+      hx-get="/annotate/form?question_id={{ question_id }}&context_name={{ context_name }}&sentiment=up"
+      hx-target="#annotation-area"
+      hx-swap="outerHTML"
+    >👍</button>
+    <button
+      class="thumb thumb-down"
+      hx-get="/annotate/form?question_id={{ question_id }}&context_name={{ context_name }}&sentiment=down"
+      hx-target="#annotation-area"
+      hx-swap="outerHTML"
+    >👎</button>
+  </div>
+
   <form
     hx-post="/ui/{{ context_name }}/evaluate"
     hx-target="#question-area"
@@ -8,6 +24,7 @@
     hx-disabled-elt="find button"
   >
     <input type="hidden" name="question" value="{{ question }}" />
+    <input type="hidden" name="question_id" value="{{ question_id }}" />
     <input type="hidden" name="query" value="{{ query }}" />
     <input type="hidden" name="session_id" value="{{ session_id }}" />
     <textarea
@@ -20,4 +37,11 @@
     <button type="submit" class="submit">Submit</button>
     <span class="htmx-indicator"> Evaluating...</span>
   </form>
+
+  <button
+    class="skip"
+    hx-get="/ui/{{ context_name }}/question?query={{ query | urlencode }}&session_id={{ session_id }}"
+    hx-target="#question-area"
+    hx-swap="outerHTML"
+  >Skip</button>
 </div>
