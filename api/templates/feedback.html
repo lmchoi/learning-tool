@@ -36,6 +36,17 @@
     >👎</button>
   </div>
 
+  <div id="evaluation-report-area">
+    <button
+      class="report-toggle"
+      hx-get="/report-evaluation/form?question_id={{ question_id }}&context_name={{ context_name }}"
+      hx-target="#evaluation-report-area"
+      hx-swap="outerHTML"
+    >
+      Report feedback
+    </button>
+  </div>
+
   <button
     class="next"
     hx-get="/ui/{{ context_name }}/question?query={{ result.follow_up_question | urlencode }}&session_id={{ session_id }}"

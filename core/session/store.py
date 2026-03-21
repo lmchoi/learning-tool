@@ -19,7 +19,14 @@ CREATE TABLE IF NOT EXISTS attempts (
     question_text TEXT NOT NULL,
     answer_text   TEXT NOT NULL,
     score         INTEGER NOT NULL,
+    result_json   TEXT,
     timestamp     TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chunks (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    attempt_id INTEGER NOT NULL REFERENCES attempts(id),
+    chunk_text TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS annotations (
@@ -53,6 +60,20 @@ class SessionStore:
         attempts_cols = {row[1] for row in conn.execute("PRAGMA table_info(attempts)").fetchall()}
         if "question_id" not in attempts_cols:
             conn.execute("ALTER TABLE attempts ADD COLUMN question_id TEXT")
+        if "result_json" not in attempts_cols:
+            conn.execute("ALTER TABLE attempts ADD COLUMN result_json TEXT")
+        tables = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        }
+        if "chunks" not in tables:
+            conn.execute(
+                "CREATE TABLE chunks ("
+                "    id         INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "    attempt_id INTEGER NOT NULL REFERENCES attempts(id),"
+                "    chunk_text TEXT NOT NULL"
+                ")"
+            )
         annotations_cols = {
             row[1] for row in conn.execute("PRAGMA table_info(annotations)").fetchall()
         }
@@ -88,6 +109,7 @@ class SessionStore:
         answer_text: str,
         score: int,
         question_id: str | None = None,
+        result_json: str | None = None,
     ) -> int:
         """Record an attempt with the current timestamp. Returns the attempt id."""
         return self._add_attempt(
@@ -98,7 +120,8 @@ class SessionStore:
                 answer_text=answer_text,
                 score=score,
                 timestamp=datetime.now(UTC).isoformat(),
-            )
+            ),
+            result_json=result_json,
         )
 
     def record_annotation(
@@ -118,6 +141,86 @@ class SessionStore:
                 (question_id, target_type, sentiment, comment, datetime.now(UTC).isoformat()),
             )
 
+    def record_chunks(self, attempt_id: int, chunks: list[str]) -> None:
+        """Persist the retrieved chunks associated with an attempt."""
+        with sqlite3.connect(self._db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.executemany(
+                "INSERT INTO chunks (attempt_id, chunk_text) VALUES (?, ?)",
+                [(attempt_id, chunk) for chunk in chunks],
+            )
+
+    def load_chunks(self, attempt_id: int) -> list[str]:
+        """Return the chunks stored for an attempt, in insertion order."""
+        with sqlite3.connect(self._db_path) as conn:
+            rows = conn.execute(
+                "SELECT chunk_text FROM chunks WHERE attempt_id = ? ORDER BY id",
+                (attempt_id,),
+            ).fetchall()
+            return [row[0] for row in rows]
+
+    def load_annotations(
+        self,
+        target_type: str | None = None,
+        sentiment: str | None = None,
+    ) -> list[dict[str, object]]:
+        """Return annotations joined with attempt context, newest first."""
+        filters = []
+        params: list[object] = []
+        if target_type is not None:
+            filters.append("a.target_type = ?")
+            params.append(target_type)
+        if sentiment is not None:
+            filters.append("a.sentiment = ?")
+            params.append(sentiment)
+        where = ("WHERE " + " AND ".join(filters)) if filters else ""
+        query = f"""
+            SELECT
+                a.id,
+                a.question_id,
+                a.target_type,
+                a.sentiment,
+                a.comment,
+                a.created_at,
+                att.id as attempt_id,
+                att.question_text,
+                att.answer_text,
+                att.score,
+                att.result_json
+            FROM annotations a
+            LEFT JOIN attempts att ON att.question_id = a.question_id
+            {where}
+            ORDER BY a.id DESC
+        """
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(query, params).fetchall()
+            result = []
+            for row in rows:
+                chunks: list[str] = []
+                if row["attempt_id"] is not None:
+                    chunk_rows = conn.execute(
+                        "SELECT chunk_text FROM chunks WHERE attempt_id = ? ORDER BY id",
+                        (row["attempt_id"],),
+                    ).fetchall()
+                    chunks = [c[0] for c in chunk_rows]
+                result.append(
+                    {
+                        "id": row["id"],
+                        "question_id": row["question_id"],
+                        "target_type": row["target_type"],
+                        "sentiment": row["sentiment"],
+                        "comment": row["comment"],
+                        "created_at": row["created_at"],
+                        "question_text": row["question_text"],
+                        "answer_text": row["answer_text"],
+                        "score": row["score"],
+                        "result_json": row["result_json"],
+                        "chunks": chunks,
+                    }
+                )
+            return result
+
     def _create_session(self, session_id: str, started_at: str) -> None:
         with sqlite3.connect(self._db_path) as conn:
             conn.execute(
@@ -125,18 +228,20 @@ class SessionStore:
                 (session_id, self._context, started_at),
             )
 
-    def _add_attempt(self, attempt: QuestionAttempt) -> int:
+    def _add_attempt(self, attempt: QuestionAttempt, result_json: str | None = None) -> int:
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.execute(
                 "INSERT INTO attempts"
-                " (session_id, question_id, question_text, answer_text, score, timestamp)"
-                " VALUES (?, ?, ?, ?, ?, ?)",
+                " (session_id, question_id, question_text, answer_text,"
+                " score, result_json, timestamp)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     attempt.session_id,
                     attempt.question_id,
                     attempt.question_text,
                     attempt.answer_text,
                     attempt.score,
+                    result_json,
                     attempt.timestamp,
                 ),
             )

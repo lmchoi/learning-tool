@@ -1,0 +1,12 @@
+<div id="evaluation-report-area">
+  <form
+    hx-post="/report-evaluation"
+    hx-target="#evaluation-report-area"
+    hx-swap="outerHTML"
+  >
+    <input type="hidden" name="question_id" value="{{ question_id }}" />
+    <input type="hidden" name="context_name" value="{{ context_name }}" />
+    <textarea name="comment" rows="3" placeholder="What was wrong with this feedback? (required)" required></textarea>
+    <button type="submit">Submit report</button>
+  </form>
+</div>

@@ -22,7 +22,9 @@ from core.question.generate_gemini import generate_question_gemini
 from core.question.prompt import build_question_prompt
 from core.rag.retriever import Retriever
 from core.session.store import SessionStore
-from core.settings import STORE_DIR
+from core.settings import GITHUB_REPO, GITHUB_TOKEN, STORE_DIR
+
+_GITHUB_CONFIGURED = bool(GITHUB_TOKEN and GITHUB_REPO)
 
 
 @asynccontextmanager
@@ -114,7 +116,15 @@ async def post_evaluate_fragment(
     )
     result = await evaluate_answer(prompt, app.state.anthropic)
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    session_store.record(session_id, question, answer, result.score, question_id=question_id)
+    attempt_id = session_store.record(
+        session_id,
+        question,
+        answer,
+        result.score,
+        question_id=question_id,
+        result_json=result.model_dump_json(),
+    )
+    session_store.record_chunks(attempt_id, chunks)
     return templates.TemplateResponse(
         request,
         "feedback.html",
@@ -159,6 +169,116 @@ async def post_annotate(
         request,
         "annotated.html",
         {"sentiment": sentiment, "question_id": question_id, "context_name": context_name},
+    )
+
+
+@app.get("/report-evaluation/form", response_class=HTMLResponse)
+async def get_report_evaluation_form(
+    request: Request,
+    question_id: str,
+    context_name: str,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "evaluation_report_form.html",
+        {"question_id": question_id, "context_name": context_name},
+    )
+
+
+@app.post("/report-evaluation", response_class=HTMLResponse)
+async def post_report_evaluation(
+    request: Request,
+    question_id: str = Form(...),
+    context_name: str = Form(...),
+    comment: str = Form(...),
+) -> HTMLResponse:
+    if not comment.strip():
+        raise HTTPException(status_code=422, detail="comment is required")
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    session_store.record_annotation(question_id, "evaluation", "down", comment)
+    return templates.TemplateResponse(request, "evaluation_reported.html", {})
+
+
+@app.get("/admin/annotations", response_class=HTMLResponse)
+async def get_admin_annotations(
+    request: Request,
+    context_name: str,
+    target_type: str | None = None,
+    sentiment: str | None = None,
+) -> HTMLResponse:
+    import json as _json
+
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    raw = session_store.load_annotations(
+        target_type=target_type or None,
+        sentiment=sentiment or None,
+    )
+    for ann in raw:
+        rj = ann.get("result_json")
+        ann["result"] = _json.loads(rj) if isinstance(rj, str) else None
+    return templates.TemplateResponse(
+        request,
+        "admin_annotations.html",
+        {
+            "context_name": context_name,
+            "annotations": raw,
+            "target_type": target_type or "",
+            "sentiment": sentiment or "",
+            "github_configured": _GITHUB_CONFIGURED,
+        },
+    )
+
+
+@app.post("/admin/annotations/{annotation_id}/escalate", response_class=HTMLResponse)
+async def post_escalate_annotation(
+    request: Request,
+    annotation_id: int,
+    context_name: str,
+) -> HTMLResponse:
+    import json as _json
+
+    import httpx
+
+    if not _GITHUB_CONFIGURED:
+        raise HTTPException(status_code=503, detail="GitHub escalation is not configured")
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    annotations = session_store.load_annotations()
+    ann = next((a for a in annotations if a["id"] == annotation_id), None)
+    if ann is None:
+        raise HTTPException(status_code=404, detail="Annotation not found")
+
+    raw_rj = ann.get("result_json")
+    result = _json.loads(raw_rj) if isinstance(raw_rj, str) else {}
+    gaps = "\n".join(f"- {g}" for g in result.get("gaps", [])) or "N/A"
+    body = (
+        f"**Type:** {ann['target_type']}\n"
+        f"**Sentiment:** {ann['sentiment']}\n"
+        f"**Question:** {ann['question_text']}\n"
+        f"**Answer:** {ann['answer_text']}\n"
+        f"**Score:** {ann['score']}/10\n"
+        f"**Evaluation gaps:**\n{gaps}\n"
+        f'**Learner comment:** "{ann.get("comment") or ""}"\n'
+    )
+    async with httpx.AsyncClient() as http:
+        resp = await http.post(
+            f"https://api.github.com/repos/{GITHUB_REPO}/issues",
+            headers={
+                "Authorization": f"Bearer {GITHUB_TOKEN}",
+                "Accept": "application/vnd.github+json",
+            },
+            json={
+                "title": f"Feedback quality: {ann['target_type']} annotation #{annotation_id}",
+                "body": body,
+                "labels": ["feedback-quality"],
+            },
+        )
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=502, detail="GitHub API error")
+    issue_url = resp.json().get("html_url", "")
+    return templates.TemplateResponse(
+        request,
+        "escalated.html",
+        {"issue_url": issue_url, "annotation_id": annotation_id},
     )
 
 
