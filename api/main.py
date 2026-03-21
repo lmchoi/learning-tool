@@ -20,6 +20,7 @@ from core.models import Question, UserProfile
 from core.question.generate_gemini import generate_question_gemini
 from core.question.prompt import build_question_prompt
 from core.rag.retriever import Retriever
+from core.session.store import SessionStore
 
 
 @asynccontextmanager
@@ -28,6 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     embedder = SentenceTransformerEmbedder()
     store = ChunkStore(store_dir)
     app.state.retriever = Retriever(store=store, embedder=embedder)
+    app.state.store_dir = store_dir
     if not os.environ.get("GEMINI_API_KEY"):
         raise ValueError("GEMINI_API_KEY is not set")
     app.state.anthropic = AsyncAnthropic()
@@ -41,13 +43,19 @@ templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 @app.get("/ui/{context_name}", response_class=HTMLResponse)
 async def get_ui(request: Request, context_name: str, query: str) -> HTMLResponse:
+    session_store = SessionStore(app.state.store_dir, context_name)
+    session_id = session_store.start_session()
     return templates.TemplateResponse(
-        request, "practice.html", {"context_name": context_name, "query": query}
+        request,
+        "practice.html",
+        {"context_name": context_name, "query": query, "session_id": session_id},
     )
 
 
 @app.get("/ui/{context_name}/question", response_class=HTMLResponse)
-async def get_question_fragment(request: Request, context_name: str, query: str) -> HTMLResponse:
+async def get_question_fragment(
+    request: Request, context_name: str, query: str, session_id: str
+) -> HTMLResponse:
     try:
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
         chunks = [chunk for chunk, _ in results]
@@ -60,7 +68,12 @@ async def get_question_fragment(request: Request, context_name: str, query: str)
     return templates.TemplateResponse(
         request,
         "question.html",
-        {"context_name": context_name, "question": question.text, "query": query},
+        {
+            "context_name": context_name,
+            "question": question.text,
+            "query": query,
+            "session_id": session_id,
+        },
     )
 
 
@@ -71,6 +84,7 @@ async def post_evaluate_fragment(
     question: str = Form(...),
     answer: str = Form(...),
     query: str = Form(...),
+    session_id: str = Form(...),
 ) -> HTMLResponse:
     try:
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
@@ -83,8 +97,12 @@ async def post_evaluate_fragment(
         question=question, answer=answer, chunks=chunks, profile=profile
     )
     result = await evaluate_answer(prompt, app.state.anthropic)
+    session_store = SessionStore(app.state.store_dir, context_name)
+    session_store.record(session_id, question, result.score)
     return templates.TemplateResponse(
-        request, "feedback.html", {"context_name": context_name, "result": result}
+        request,
+        "feedback.html",
+        {"context_name": context_name, "result": result, "session_id": session_id},
     )
 
 
