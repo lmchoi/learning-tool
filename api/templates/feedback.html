@@ -24,13 +24,13 @@
   <div id="annotation-area">
     <button
       class="thumb thumb-up"
-      hx-get="/annotate/form?attempt_id={{ attempt_id }}&context_name={{ context_name }}&sentiment=up"
+      hx-get="/annotate/form?question_id={{ question_id }}&context_name={{ context_name }}&sentiment=up"
       hx-target="#annotation-area"
       hx-swap="outerHTML"
     >👍</button>
     <button
       class="thumb thumb-down"
-      hx-get="/annotate/form?attempt_id={{ attempt_id }}&context_name={{ context_name }}&sentiment=down"
+      hx-get="/annotate/form?question_id={{ question_id }}&context_name={{ context_name }}&sentiment=down"
       hx-target="#annotation-area"
       hx-swap="outerHTML"
     >👎</button>

@@ -4,7 +4,7 @@
     hx-target="#annotation-area"
     hx-swap="outerHTML"
   >
-    <input type="hidden" name="attempt_id" value="{{ attempt_id }}" />
+    <input type="hidden" name="question_id" value="{{ question_id }}" />
     <input type="hidden" name="context_name" value="{{ context_name }}" />
     <input type="hidden" name="sentiment" value="{{ sentiment }}" />
     <span class="thumb-selected">{% if sentiment == "up" %}👍{% else %}👎{% endif %}</span>

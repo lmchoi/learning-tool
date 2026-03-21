@@ -1,5 +1,6 @@
 import asyncio
 import os
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -75,12 +76,14 @@ async def get_question_fragment(
     profile = UserProfile(experience_level="beginner")
     prompt = build_question_prompt(chunks, profile)
     question = await generate_question_gemini(prompt, app.state.gemini)
+    question_id = str(uuid.uuid4())
     return templates.TemplateResponse(
         request,
         "question.html",
         {
             "context_name": context_name,
             "question": question.text,
+            "question_id": question_id,
             "query": query,
             "session_id": session_id,
         },
@@ -95,6 +98,7 @@ async def post_evaluate_fragment(
     answer: str = Form(...),
     query: str = Form(...),
     session_id: str = Form(...),
+    question_id: str | None = Form(default=None),
 ) -> HTMLResponse:
     try:
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
@@ -108,7 +112,7 @@ async def post_evaluate_fragment(
     )
     result = await evaluate_answer(prompt, app.state.anthropic)
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    attempt_id = session_store.record(session_id, question, answer, result.score)
+    session_store.record(session_id, question, answer, result.score, question_id=question_id)
     return templates.TemplateResponse(
         request,
         "feedback.html",
@@ -116,7 +120,7 @@ async def post_evaluate_fragment(
             "context_name": context_name,
             "result": result,
             "session_id": session_id,
-            "attempt_id": attempt_id,
+            "question_id": question_id,
         },
     )
 
@@ -124,7 +128,7 @@ async def post_evaluate_fragment(
 @app.get("/annotate/form", response_class=HTMLResponse)
 async def get_annotate_form(
     request: Request,
-    attempt_id: int,
+    question_id: str,
     context_name: str,
     sentiment: str,
 ) -> HTMLResponse:
@@ -133,14 +137,14 @@ async def get_annotate_form(
     return templates.TemplateResponse(
         request,
         "annotation_form.html",
-        {"attempt_id": attempt_id, "context_name": context_name, "sentiment": sentiment},
+        {"question_id": question_id, "context_name": context_name, "sentiment": sentiment},
     )
 
 
 @app.post("/annotate", response_class=HTMLResponse)
 async def post_annotate(
     request: Request,
-    attempt_id: int = Form(...),
+    question_id: str = Form(...),
     context_name: str = Form(...),
     sentiment: str = Form(...),
     comment: str | None = Form(default=None),
@@ -148,11 +152,11 @@ async def post_annotate(
     if sentiment not in ("up", "down"):
         raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    session_store.record_annotation(attempt_id, "question", sentiment, comment or None)
+    session_store.record_annotation(question_id, "question", sentiment, comment or None)
     return templates.TemplateResponse(
         request,
         "annotated.html",
-        {"sentiment": sentiment},
+        {"sentiment": sentiment, "question_id": question_id, "context_name": context_name},
     )
 
 
