@@ -98,7 +98,7 @@ async def post_evaluate_fragment(
     )
     result = await evaluate_answer(prompt, app.state.anthropic)
     session_store = SessionStore(app.state.store_dir, context_name)
-    session_store.record(session_id, question, result.score)
+    session_store.record(session_id, question, answer, result.score)
     return templates.TemplateResponse(
         request,
         "feedback.html",

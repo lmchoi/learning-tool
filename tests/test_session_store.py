@@ -23,6 +23,7 @@ def test_add_attempt_round_trip(tmp_path: Path) -> None:
     attempt = QuestionAttempt(
         session_id="s1",
         question_text="What is X?",
+        answer_text="It is Y.",
         score=7,
         timestamp="2026-03-21T09:01:00",
     )
@@ -33,6 +34,7 @@ def test_add_attempt_round_trip(tmp_path: Path) -> None:
     assert len(sessions[0].attempts) == 1
     loaded = sessions[0].attempts[0]
     assert loaded.question_text == "What is X?"
+    assert loaded.answer_text == "It is Y."
     assert loaded.score == 7
     assert loaded.timestamp == "2026-03-21T09:01:00"
 
@@ -45,6 +47,7 @@ def test_multiple_attempts_ordered(tmp_path: Path) -> None:
             QuestionAttempt(
                 session_id="s1",
                 question_text=q,
+                answer_text=f"Answer {i}",
                 score=i + 5,
                 timestamp=f"2026-03-21T09:0{i}:00",
             )
