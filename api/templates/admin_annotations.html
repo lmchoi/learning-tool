@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Annotations — {{ context_name }}</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <h1>Annotations: {{ context_name }}</h1>
+
+  <form method="get">
+    <input type="hidden" name="context_name" value="{{ context_name }}" />
+    <label>
+      Type:
+      <select name="target_type">
+        <option value="">All</option>
+        <option value="question" {% if target_type == "question" %}selected{% endif %}>Question</option>
+        <option value="evaluation" {% if target_type == "evaluation" %}selected{% endif %}>Evaluation</option>
+      </select>
+    </label>
+    <label>
+      Sentiment:
+      <select name="sentiment">
+        <option value="">All</option>
+        <option value="up" {% if sentiment == "up" %}selected{% endif %}>Up</option>
+        <option value="down" {% if sentiment == "down" %}selected{% endif %}>Down</option>
+      </select>
+    </label>
+    <button type="submit">Filter</button>
+  </form>
+
+  {% if not annotations %}
+    <p>No annotations found.</p>
+  {% else %}
+    {% for ann in annotations %}
+    <div class="annotation-card" id="annotation-{{ ann.id }}">
+      <span class="badge badge-type">{{ ann.target_type }}</span>
+      <span class="badge badge-sentiment">{{ ann.sentiment }}</span>
+      <p><strong>Question:</strong> {{ ann.question_text or "—" }}</p>
+      <p><strong>Answer:</strong> {{ ann.answer_text or "—" }}</p>
+      {% if ann.score is not none %}<p><strong>Score:</strong> {{ ann.score }}/10</p>{% endif %}
+      {% if ann.result %}
+        {% if ann.result.strengths %}
+        <p><strong>Strengths:</strong></p>
+        <ul>{% for s in ann.result.strengths %}<li>{{ s }}</li>{% endfor %}</ul>
+        {% endif %}
+        {% if ann.result.gaps %}
+        <p><strong>Gaps:</strong></p>
+        <ul>{% for g in ann.result.gaps %}<li>{{ g }}</li>{% endfor %}</ul>
+        {% endif %}
+        {% if ann.result.missing_points %}
+        <p><strong>Missing points:</strong></p>
+        <ul>{% for m in ann.result.missing_points %}<li>{{ m }}</li>{% endfor %}</ul>
+        {% endif %}
+        {% if ann.result.suggested_addition %}
+        <p><strong>Suggested addition:</strong> {{ ann.result.suggested_addition }}</p>
+        {% endif %}
+        {% if ann.result.follow_up_question %}
+        <p><strong>Follow-up:</strong> {{ ann.result.follow_up_question }}</p>
+        {% endif %}
+      {% endif %}
+      {% if ann.chunks %}
+      <details>
+        <summary>Chunks ({{ ann.chunks | length }})</summary>
+        <ol>
+          {% for chunk in ann.chunks %}<li>{{ chunk }}</li>{% endfor %}
+        </ol>
+      </details>
+      {% endif %}
+      {% if ann.comment %}
+      <p><strong>Learner comment:</strong> "{{ ann.comment }}"</p>
+      {% endif %}
+      <p class="annotation-date">{{ ann.created_at }}</p>
+      {% if github_configured %}
+      <div id="escalate-{{ ann.id }}">
+        <button
+          hx-post="/admin/annotations/{{ ann.id }}/escalate?context_name={{ context_name }}"
+          hx-target="#escalate-{{ ann.id }}"
+          hx-swap="outerHTML"
+        >
+          Create GitHub issue
+        </button>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% endif %}
+</body>
+</html>
