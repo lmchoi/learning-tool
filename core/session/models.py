@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class QuestionAttempt:
     session_id: str
     question_text: str
+    answer_text: str
     score: int
     timestamp: str
 

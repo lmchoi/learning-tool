@@ -119,4 +119,5 @@ def test_practice_creates_sessions_db(
     sessions = store.load_sessions()
     assert len(sessions) == 1
     assert len(sessions[0].attempts) == 1
+    assert sessions[0].attempts[0].answer_text == "my answer"
     assert sessions[0].attempts[0].score == 8

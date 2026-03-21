@@ -5,11 +5,13 @@ def test_question_attempt_fields() -> None:
     attempt = QuestionAttempt(
         session_id="s1",
         question_text="What is X?",
+        answer_text="It is Y.",
         score=8,
         timestamp="2026-03-21T10:00:00",
     )
     assert attempt.session_id == "s1"
     assert attempt.question_text == "What is X?"
+    assert attempt.answer_text == "It is Y."
     assert attempt.score == 8
     assert attempt.timestamp == "2026-03-21T10:00:00"
 
@@ -18,6 +20,7 @@ def test_session_record_fields() -> None:
     attempt = QuestionAttempt(
         session_id="s1",
         question_text="What is X?",
+        answer_text="It is Y.",
         score=8,
         timestamp="2026-03-21T10:00:00",
     )

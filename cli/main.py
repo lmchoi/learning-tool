@@ -169,7 +169,7 @@ def practice(
             )
             evaluation = await evaluate_answer(eval_prompt, client)
 
-            session_store.record(session_id, next_question, evaluation.score)
+            session_store.record(session_id, next_question, answer, evaluation.score)
 
             print(f"\nScore: {evaluation.score}/10")
             if evaluation.strengths:
