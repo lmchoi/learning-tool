@@ -21,11 +21,12 @@ from core.question.generate_gemini import generate_question_gemini
 from core.question.prompt import build_question_prompt
 from core.rag.retriever import Retriever
 from core.session.store import SessionStore
+from core.settings import STORE_DIR
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    store_dir = Path(os.environ.get("STORE_DIR", "contexts/store"))
+    store_dir = STORE_DIR
     embedder = SentenceTransformerEmbedder()
     store = ChunkStore(store_dir)
     app.state.retriever = Retriever(store=store, embedder=embedder)

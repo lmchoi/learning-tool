@@ -1,5 +1,4 @@
 import asyncio
-import os
 from pathlib import Path
 
 import typer
@@ -15,10 +14,9 @@ from core.question.generate import generate_question
 from core.question.prompt import build_question_prompt
 from core.rag.retriever import Retriever
 from core.session.store import SessionStore
+from core.settings import STORE_DIR as DEFAULT_STORE
 
 app = typer.Typer()
-
-DEFAULT_STORE = Path(os.environ.get("STORE_DIR", "contexts/store"))
 
 
 @app.command()
