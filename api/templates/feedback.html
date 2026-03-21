@@ -22,20 +22,18 @@
   <p class="follow-up">{{ result.follow_up_question }}</p>
 
   <div id="annotation-area">
-    <form
-      hx-post="/annotate"
+    <button
+      class="thumb thumb-up"
+      hx-get="/annotate/form?attempt_id={{ attempt_id }}&context_name={{ context_name }}&sentiment=up"
       hx-target="#annotation-area"
       hx-swap="outerHTML"
-    >
-      <input type="hidden" name="attempt_id" value="{{ attempt_id }}" />
-      <input type="hidden" name="context_name" value="{{ context_name }}" />
-      <button type="submit" name="sentiment" value="up" class="thumb thumb-up">👍</button>
-      <button type="submit" name="sentiment" value="down" class="thumb thumb-down">👎</button>
-      <details>
-        <summary>Add a reason</summary>
-        <textarea name="comment" rows="2" placeholder="Optional reason..."></textarea>
-      </details>
-    </form>
+    >👍</button>
+    <button
+      class="thumb thumb-down"
+      hx-get="/annotate/form?attempt_id={{ attempt_id }}&context_name={{ context_name }}&sentiment=down"
+      hx-target="#annotation-area"
+      hx-swap="outerHTML"
+    >👎</button>
   </div>
 
   <button

@@ -111,6 +111,22 @@ async def post_evaluate_fragment(
     )
 
 
+@app.get("/annotate/form", response_class=HTMLResponse)
+async def get_annotate_form(
+    request: Request,
+    attempt_id: int,
+    context_name: str,
+    sentiment: str,
+) -> HTMLResponse:
+    if sentiment not in ("up", "down"):
+        raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
+    return templates.TemplateResponse(
+        request,
+        "annotation_form.html",
+        {"attempt_id": attempt_id, "context_name": context_name, "sentiment": sentiment},
+    )
+
+
 @app.post("/annotate", response_class=HTMLResponse)
 async def post_annotate(
     request: Request,
