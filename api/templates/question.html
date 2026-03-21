@@ -4,6 +4,8 @@
     hx-post="/ui/{{ context_name }}/evaluate"
     hx-target="#question-area"
     hx-swap="outerHTML"
+    hx-indicator=".htmx-indicator"
+    hx-disabled-elt="find button"
   >
     <input type="hidden" name="question" value="{{ question }}" />
     <input type="hidden" name="query" value="{{ query }}" />
@@ -11,5 +13,6 @@
     <textarea name="answer" rows="5" placeholder="Your answer..."></textarea>
     <br />
     <button type="submit" class="submit">Submit</button>
+    <span class="htmx-indicator"> Evaluating...</span>
   </form>
 </div>
