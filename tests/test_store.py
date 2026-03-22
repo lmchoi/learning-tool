@@ -17,6 +17,7 @@ def test_context_store_round_trip(tmp_path: Path) -> None:
     store.save_context("my-context", metadata)
     loaded = store.load_context("my-context")
 
+    assert loaded is not None
     assert loaded.goal == metadata.goal
     assert loaded.focus_areas == metadata.focus_areas
 
@@ -30,13 +31,13 @@ def test_context_store_overwrites_existing(tmp_path: Path) -> None:
     store.save_context("ctx", new)
     loaded = store.load_context("ctx")
 
+    assert loaded is not None
     assert loaded.goal == "new goal"
 
 
-def test_context_store_missing_raises(tmp_path: Path) -> None:
+def test_context_store_returns_none_when_missing(tmp_path: Path) -> None:
     store = ContextStore(tmp_path)
-    with pytest.raises(FileNotFoundError):
-        store.load_context("does-not-exist")
+    assert store.load_context("does-not-exist") is None
 
 
 def test_store_and_load_round_trip(tmp_path: Path) -> None:

@@ -28,17 +28,14 @@ def init(
     store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the chunk store"),
 ) -> None:
     """Ingest all documents in a source directory into a context."""
-    try:
-        existing = ContextStore(store_dir).load_context(context)
+    if not source.exists() or not source.is_dir():
+        typer.echo(f"Error: source directory not found: {source}", err=True)
+        raise typer.Exit(code=1)
+    existing = ContextStore(store_dir).load_context(context)
+    if existing:
         typer.echo(f"Context '{context}' already exists. Focus areas:")
         for area in existing.focus_areas:
             typer.echo(f"  - {area}")
-        typer.echo("Run with --force to reingest and overwrite.")
-        raise typer.Exit(code=1)
-    except FileNotFoundError:
-        pass
-    if not source.exists() or not source.is_dir():
-        typer.echo(f"Error: source directory not found: {source}", err=True)
         raise typer.Exit(code=1)
     paths = [p for p in walk_source_dir(source) if p.name != "GOAL.md"]
     if not paths:

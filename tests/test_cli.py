@@ -48,7 +48,6 @@ def test_init_warns_and_exits_when_context_exists(tmp_path: Path) -> None:
     assert "my-context" in result.output
     assert "LLM evaluation" in result.output
     assert "Python async" in result.output
-    assert "--force" in result.output
 
 
 def test_init_ingests_supported_files(tmp_path: Path) -> None:
@@ -99,6 +98,7 @@ def test_init_extracts_and_saves_context_yaml(source_dir: Path, tmp_path: Path) 
 
     assert result.exit_code == 0
     loaded = ContextStore(store_dir).load_context("test")
+    assert loaded is not None
     assert loaded.goal == _FAKE_METADATA.goal
     assert loaded.focus_areas == _FAKE_METADATA.focus_areas
 
