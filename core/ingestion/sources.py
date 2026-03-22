@@ -2,6 +2,15 @@ from pathlib import Path
 
 import yaml
 
+_SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf"}
+
+
+def walk_source_dir(source_dir: Path) -> list[Path]:
+    """Return all supported document files in source_dir, recursively."""
+    return sorted(
+        p for p in source_dir.rglob("*") if p.is_file() and p.suffix in _SUPPORTED_EXTENSIONS
+    )
+
 
 def load_sources(sources_file: Path) -> list[Path]:
     """Load and validate local file paths from a sources.yaml config."""

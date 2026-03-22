@@ -8,6 +8,7 @@ from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.ingest import ingest
+from core.ingestion.sources import walk_source_dir
 from core.ingestion.store import ChunkStore
 from core.models import UserProfile
 from core.question.generate import generate_question
@@ -17,6 +18,26 @@ from core.session.store import SessionStore
 from core.settings import STORE_DIR as DEFAULT_STORE
 
 app = typer.Typer()
+
+
+@app.command()
+def init(
+    source: Path = typer.Option(..., help="Directory of source documents"),
+    context: str = typer.Option(..., help="Context name"),
+    store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the chunk store"),
+) -> None:
+    """Ingest all documents in a source directory into a context."""
+    if not source.exists() or not source.is_dir():
+        typer.echo(f"Error: source directory not found: {source}", err=True)
+        raise typer.Exit(code=1)
+    paths = [p for p in walk_source_dir(source) if p.name != "GOAL.md"]
+    if not paths:
+        typer.echo(f"Error: no supported files found in {source}", err=True)
+        raise typer.Exit(code=1)
+    store = ChunkStore(store_dir)
+    embedder = SentenceTransformerEmbedder()
+    ingest(context=context, paths=paths, embedder=embedder, store=store)
+    typer.echo(f"Ingested {len(paths)} file(s) into context '{context}'")
 
 
 @app.command()
