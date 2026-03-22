@@ -2,3 +2,4 @@ import os
 
 QUESTION_GENERATION_MODEL = os.getenv("QUESTION_GENERATION_MODEL", "claude-haiku-4-5")
 ANSWER_EVALUATION_MODEL = os.getenv("ANSWER_EVALUATION_MODEL", "claude-haiku-4-5")
+CONTEXT_EXTRACTION_MODEL = os.getenv("CONTEXT_EXTRACTION_MODEL", "claude-haiku-4-5")
