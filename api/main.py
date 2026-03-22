@@ -97,6 +97,7 @@ async def get_ui(request: Request, context_name: str, query: str | None = None) 
     if query is None:
         metadata = app.state.context_store.load_context(context_name)
         if metadata is None:
+            logger.warning("404 context not found: %s", context_name)
             raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found")
         return templates.TemplateResponse(
             request,
@@ -120,6 +121,7 @@ async def get_question_fragment(
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
         chunks = [chunk for chunk, _ in results]
     except FileNotFoundError as e:
+        logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
     profile = UserProfile(experience_level="beginner")
@@ -155,6 +157,7 @@ async def post_evaluate_fragment(
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
         chunks = [chunk for chunk, _ in results]
     except FileNotFoundError as e:
+        logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
     profile = UserProfile(experience_level="beginner")
@@ -192,6 +195,7 @@ async def get_annotate_form(
     sentiment: str,
 ) -> HTMLResponse:
     if sentiment not in ("up", "down"):
+        logger.warning("422 invalid sentiment: %r", sentiment)
         raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
     return templates.TemplateResponse(
         request,
@@ -209,6 +213,7 @@ async def post_annotate(
     comment: str | None = Form(default=None),
 ) -> HTMLResponse:
     if sentiment not in ("up", "down"):
+        logger.warning("422 invalid sentiment: %r", sentiment)
         raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     session_store.record_annotation(question_id, "question", sentiment, comment or None)
@@ -240,6 +245,7 @@ async def post_report_evaluation(
     comment: str = Form(...),
 ) -> HTMLResponse:
     if not comment.strip():
+        logger.warning("422 empty comment on evaluation report for question_id=%s", question_id)
         raise HTTPException(status_code=422, detail="comment is required")
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     session_store.record_annotation(question_id, "evaluation", "down", comment)
@@ -259,10 +265,12 @@ async def get_admin_annotations(
     flagged: bool = False,
 ) -> HTMLResponse:
     if target_type is not None and target_type not in _VALID_TARGET_TYPES:
+        logger.warning("422 invalid target_type: %r", target_type)
         raise HTTPException(
             status_code=422, detail=f"target_type must be one of {_VALID_TARGET_TYPES}"
         )
     if sentiment is not None and sentiment not in _VALID_SENTIMENTS:
+        logger.warning("422 invalid sentiment: %r", sentiment)
         raise HTTPException(status_code=422, detail=f"sentiment must be one of {_VALID_SENTIMENTS}")
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     raw = session_store.load_annotations(
@@ -292,10 +300,12 @@ async def post_escalate_annotation(
     context_name: str,
 ) -> HTMLResponse:
     if not _GITHUB_CONFIGURED:
+        logger.error("503 GitHub escalation not configured")
         raise HTTPException(status_code=503, detail="GitHub escalation is not configured")
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     ann = session_store.load_annotation(annotation_id)
     if ann is None:
+        logger.warning("404 annotation not found: id=%d", annotation_id)
         raise HTTPException(status_code=404, detail="Annotation not found")
 
     raw_rj = ann.get("result_json")
@@ -324,6 +334,9 @@ async def post_escalate_annotation(
             },
         )
     if resp.status_code not in (200, 201):
+        logger.error(
+            "502 GitHub API error: status=%d annotation_id=%d", resp.status_code, annotation_id
+        )
         raise HTTPException(status_code=502, detail="GitHub API error")
     issue_url = resp.json().get("html_url", "")
     return templates.TemplateResponse(
@@ -342,6 +355,7 @@ async def post_flag_annotation(
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     ann = session_store.load_annotation(annotation_id)
     if ann is None:
+        logger.warning("404 annotation not found: id=%d", annotation_id)
         raise HTTPException(status_code=404, detail="Annotation not found")
     session_store.flag_annotation(annotation_id)
     return templates.TemplateResponse(
@@ -354,6 +368,7 @@ async def post_flag_annotation(
 @app.get("/contexts/{context_name}/questions")
 async def get_bank_question(context_name: str, pick: str | None = None) -> dict[str, object]:
     if pick != "random":
+        logger.warning("422 invalid pick param: %r", pick)
         raise HTTPException(status_code=422, detail="pick must be 'random'")
     bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
     question = await asyncio.to_thread(bank_store.get_random)
@@ -379,6 +394,7 @@ async def get_question(context_name: str, query: str) -> Question:
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
         chunks = [chunk for chunk, _ in results]
     except FileNotFoundError as e:
+        logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
     profile = UserProfile(experience_level="beginner")
@@ -394,6 +410,7 @@ async def post_evaluate(context_name: str, body: EvaluateRequest) -> EvaluationR
         )
         chunks = [chunk for chunk, _ in results]
     except FileNotFoundError as e:
+        logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
     profile = UserProfile(experience_level="beginner")
