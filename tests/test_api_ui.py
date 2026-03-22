@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api.main import _get_session_store, app
-from core.models import EvaluationResult, Question
+from core.models import ContextMetadata, EvaluationResult, Question
 from core.session.store import SessionStore
 
 
@@ -40,6 +40,11 @@ EVALUATION = EvaluationResult(
     follow_up_question="What about X?",
 )
 
+METADATA = ContextMetadata(
+    goal="Learn Python",
+    focus_areas=["Async", "Type hints"],
+)
+
 
 def test_get_ui_returns_200(client: TestClient) -> None:
     response = client.get("/ui/my-context?query=topic")
@@ -65,6 +70,26 @@ def test_get_ui_triggers_question_load_on_page_load(client: TestClient) -> None:
 
     assert "hx-get" in response.text
     assert "hx-trigger" in response.text
+
+
+def test_get_ui_without_query_shows_focus_area_picker(client: TestClient) -> None:
+    app.state.context_store = MagicMock()
+    app.state.context_store.load_context.return_value = METADATA
+
+    response = client.get("/ui/my-context")
+
+    assert response.status_code == 200
+    assert "Async" in response.text
+    assert "Type hints" in response.text
+
+
+def test_get_ui_without_query_returns_404_for_missing_context(client: TestClient) -> None:
+    app.state.context_store = MagicMock()
+    app.state.context_store.load_context.return_value = None
+
+    response = client.get("/ui/missing-context")
+
+    assert response.status_code == 404
 
 
 def test_get_question_fragment_returns_200(client: TestClient, mock_retriever: MagicMock) -> None:
