@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS attempts (
 CREATE TABLE IF NOT EXISTS chunks (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     attempt_id INTEGER NOT NULL REFERENCES attempts(id),
-    chunk_text TEXT NOT NULL
+    chunk_text TEXT NOT NULL,
+    score      REAL
 );
 
 CREATE TABLE IF NOT EXISTS annotations (
@@ -71,9 +72,13 @@ class SessionStore:
                 "CREATE TABLE chunks ("
                 "    id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 "    attempt_id INTEGER NOT NULL REFERENCES attempts(id),"
-                "    chunk_text TEXT NOT NULL"
+                "    chunk_text TEXT NOT NULL,"
+                "    score      REAL"
                 ")"
             )
+        chunks_cols = {row[1] for row in conn.execute("PRAGMA table_info(chunks)").fetchall()}
+        if "score" not in chunks_cols:
+            conn.execute("ALTER TABLE chunks ADD COLUMN score REAL")
         annotations_cols = {
             row[1] for row in conn.execute("PRAGMA table_info(annotations)").fetchall()
         }
@@ -141,23 +146,23 @@ class SessionStore:
                 (question_id, target_type, sentiment, comment, datetime.now(UTC).isoformat()),
             )
 
-    def record_chunks(self, attempt_id: int, chunks: list[str]) -> None:
-        """Persist the retrieved chunks associated with an attempt."""
+    def record_chunks(self, attempt_id: int, chunks: list[tuple[str, float]]) -> None:
+        """Persist the retrieved chunks (text + similarity score) associated with an attempt."""
         with sqlite3.connect(self._db_path) as conn:
             conn.execute("PRAGMA foreign_keys = ON")
             conn.executemany(
-                "INSERT INTO chunks (attempt_id, chunk_text) VALUES (?, ?)",
-                [(attempt_id, chunk) for chunk in chunks],
+                "INSERT INTO chunks (attempt_id, chunk_text, score) VALUES (?, ?, ?)",
+                [(attempt_id, text, score) for text, score in chunks],
             )
 
-    def load_chunks(self, attempt_id: int) -> list[str]:
+    def load_chunks(self, attempt_id: int) -> list[tuple[str, float | None]]:
         """Return the chunks stored for an attempt, in insertion order."""
         with sqlite3.connect(self._db_path) as conn:
             rows = conn.execute(
-                "SELECT chunk_text FROM chunks WHERE attempt_id = ? ORDER BY id",
+                "SELECT chunk_text, score FROM chunks WHERE attempt_id = ? ORDER BY id",
                 (attempt_id,),
             ).fetchall()
-            return [row[0] for row in rows]
+            return [(row[0], row[1]) for row in rows]
 
     def load_annotations(
         self,
@@ -204,13 +209,13 @@ class SessionStore:
             rows = conn.execute(query, params).fetchall()
             result = []
             for row in rows:
-                chunks: list[str] = []
+                chunks: list[tuple[str, float | None]] = []
                 if row["attempt_id"] is not None:
                     chunk_rows = conn.execute(
-                        "SELECT chunk_text FROM chunks WHERE attempt_id = ? ORDER BY id",
+                        "SELECT chunk_text, score FROM chunks WHERE attempt_id = ? ORDER BY id",
                         (row["attempt_id"],),
                     ).fetchall()
-                    chunks = [c[0] for c in chunk_rows]
+                    chunks = [(c[0], c[1]) for c in chunk_rows]
                 result.append(
                     {
                         "id": row["id"],
