@@ -77,6 +77,34 @@ def test_init_extracts_and_saves_context_yaml(source_dir: Path, tmp_path: Path) 
     assert loaded.focus_areas == _FAKE_METADATA.focus_areas
 
 
+def test_init_prints_goal_and_focus_areas(source_dir: Path, tmp_path: Path) -> None:
+    (source_dir / "GOAL.md").write_text("I want to prepare for my biology exam.")
+    store_dir = tmp_path / "store"
+
+    with (
+        patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)),
+        patch("cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                str(source_dir),
+                "--context",
+                "test",
+                "--store-dir",
+                str(store_dir),
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "Goal: Preparing for a biology exam." in result.output
+    assert "- cell biology" in result.output
+    assert "- genetics" in result.output
+    assert str(store_dir / "test" / "context.yaml") in result.output
+
+
 def test_init_skips_context_extraction_when_no_goal_md(source_dir: Path, tmp_path: Path) -> None:
     store_dir = tmp_path / "store"
 
