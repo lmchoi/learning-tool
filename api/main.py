@@ -90,6 +90,7 @@ async def get_question_fragment(
             "question_id": question_id,
             "query": query,
             "session_id": session_id,
+            "prompt_text": prompt,
         },
     )
 
@@ -105,6 +106,7 @@ async def post_evaluate_fragment(
     question_id: str | None = Form(
         default=None
     ),  # always sent by question.html; None only if called outside the UI
+    prompt_text: str | None = Form(default=None),
 ) -> HTMLResponse:
     try:
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
@@ -125,6 +127,7 @@ async def post_evaluate_fragment(
         result.score,
         question_id=question_id,
         result_json=result.model_dump_json(),
+        prompt_text=prompt_text,
     )
     session_store.record_chunks(attempt_id, results)
     return templates.TemplateResponse(
