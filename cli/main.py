@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from pathlib import Path
 
 import typer
@@ -18,9 +19,20 @@ from core.question.prompt import build_question_prompt
 from core.question.store import QuestionBankStore
 from core.rag.retriever import Retriever
 from core.session.store import SessionStore
+from core.settings import LOG_LEVEL
 from core.settings import STORE_DIR as DEFAULT_STORE
 
+logger = logging.getLogger(__name__)
+
 app = typer.Typer()
+
+
+@app.callback()
+def _setup_logging() -> None:
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
 
 
 @app.command()
@@ -42,7 +54,11 @@ def init(
                 typer.echo(f"  - {area}")
             typer.echo("Run with --force to reingest and overwrite.")
             raise typer.Exit(code=1)
-    paths = [p for p in walk_source_dir(source) if p.name != "GOAL.md"]
+    all_paths = walk_source_dir(source)
+    paths = [p for p in all_paths if p.name != "GOAL.md"]
+    skipped = len(all_paths) - len(paths)
+    if skipped:
+        logger.debug("excluded %d GOAL.md file(s) from ingestion", skipped)
     if not paths:
         typer.echo(f"Error: no supported files found in {source}", err=True)
         raise typer.Exit(code=1)
