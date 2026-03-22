@@ -227,3 +227,32 @@ button.thumb-down:hover {
   font-size: 20px;
   padding: 4px 8px;
 }
+
+/* --- Focus area picker --- */
+
+.muted {
+  color: var(--muted);
+}
+
+.focus-areas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.focus-area {
+  display: block;
+  border: 2px solid var(--secondary);
+  border-radius: 6px;
+  padding: 16px 20px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.focus-area:hover {
+  background: var(--secondary);
+  color: #ffffff;
+}
