@@ -2,8 +2,9 @@ import asyncio
 import json
 import logging
 import os
+import time
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from google import genai
 from starlette.requests import Request
-from starlette.responses import HTMLResponse
+from starlette.responses import HTMLResponse, Response
 
 from api.models import EvaluateRequest, EvaluationResponse
 from core.evaluation.evaluate import evaluate_answer
@@ -62,6 +63,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+
+
+@app.middleware("http")
+async def log_requests(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    start = time.perf_counter()
+    response = await call_next(request)
+    latency = time.perf_counter() - start
+    logger.info("%s %s %s %.3fs", request.method, request.url.path, response.status_code, latency)
+    return response
 
 
 def _get_session_store(
