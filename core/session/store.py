@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS annotations (
     sentiment   TEXT NOT NULL CHECK(sentiment IN ('up', 'down')),
     comment     TEXT,
     created_at  TEXT NOT NULL,
+    flagged_at  TEXT,
     UNIQUE(question_id, target_type)  -- one per question; INSERT OR REPLACE means last write wins
 );
 """
@@ -97,9 +98,16 @@ class SessionStore:
                 "    sentiment   TEXT NOT NULL CHECK(sentiment IN ('up', 'down')),"
                 "    comment     TEXT,"
                 "    created_at  TEXT NOT NULL,"
+                "    flagged_at  TEXT,"
                 "    UNIQUE(question_id, target_type)"
                 ");"
             )
+        # Re-fetch after potential recreate above
+        annotations_cols = {
+            row[1] for row in conn.execute("PRAGMA table_info(annotations)").fetchall()
+        }
+        if "flagged_at" not in annotations_cols:
+            conn.execute("ALTER TABLE annotations ADD COLUMN flagged_at TEXT")
 
     def start_session(self) -> str:
         """Create a new session and return its ID."""
@@ -144,6 +152,14 @@ class SessionStore:
                 " (question_id, target_type, sentiment, comment, created_at)"
                 " VALUES (?, ?, ?, ?, ?)",
                 (question_id, target_type, sentiment, comment, datetime.now(UTC).isoformat()),
+            )
+
+    def flag_annotation(self, annotation_id: int) -> None:
+        """Set flagged_at on an annotation to mark it for review."""
+        with sqlite3.connect(self._db_path) as conn:
+            conn.execute(
+                "UPDATE annotations SET flagged_at = ? WHERE id = ?",
+                (datetime.now(UTC).isoformat(), annotation_id),
             )
 
     def record_chunks(self, attempt_id: int, chunks: list[tuple[str, float]]) -> None:
