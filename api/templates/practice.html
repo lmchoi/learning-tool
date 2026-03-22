@@ -13,7 +13,7 @@
     <h1>{{ context_name }}</h1>
     <div
       id="question-area"
-      hx-get="/ui/{{ context_name }}/question?query={{ query | urlencode }}&session_id={{ session_id }}"
+      hx-get="/ui/{{ context_name }}/question/bank?focus_area={{ query | urlencode }}&session_id={{ session_id }}"
       hx-trigger="load"
       hx-swap="outerHTML"
     >

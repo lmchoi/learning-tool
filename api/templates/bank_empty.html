@@ -1,0 +1,9 @@
+<div id="question-area">
+  <p class="muted">No questions in the bank for this area yet.</p>
+  <button
+    class="skip"
+    hx-get="/ui/{{ context_name }}/question?query={{ focus_area | urlencode }}&session_id={{ session_id }}"
+    hx-target="#question-area"
+    hx-swap="outerHTML"
+  >Generate a question</button>
+</div>

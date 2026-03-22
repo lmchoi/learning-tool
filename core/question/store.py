@@ -42,12 +42,18 @@ class QuestionBankStore:
             ).fetchall()
             return [BankQuestion(id=row[0], focus_area=row[1], question=row[2]) for row in rows]
 
-    def get_random(self) -> BankQuestion | None:
-        """Return a random question from the bank, or None if the bank is empty."""
+    def get_random(self, focus_area: str | None = None) -> BankQuestion | None:
+        """Return a random question from the bank, or None if the bank is empty.
+
+        If focus_area is provided, restrict to questions with that focus area.
+        """
+        sql = "SELECT id, focus_area, question FROM bank_questions"
+        params: tuple[str, ...] = ()
+        if focus_area is not None:
+            sql += " WHERE focus_area = ?"
+            params = (focus_area,)
         with sqlite3.connect(self._db_path) as conn:
-            row = conn.execute(
-                "SELECT id, focus_area, question FROM bank_questions ORDER BY RANDOM() LIMIT 1"
-            ).fetchone()
+            row = conn.execute(sql + " ORDER BY RANDOM() LIMIT 1", params).fetchone()
         if row is None:
             return None
         return BankQuestion(id=row[0], focus_area=row[1], question=row[2])
