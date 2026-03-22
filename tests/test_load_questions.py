@@ -114,6 +114,19 @@ def test_store_add_is_idempotent(tmp_path: Path) -> None:
     assert len(store.list()) == 1
 
 
+def test_store_get_random_returns_question(tmp_path: Path) -> None:
+    store = QuestionBankStore(tmp_path, "ctx")
+    store.add([BankQuestion.from_parts("A", "Q1"), BankQuestion.from_parts("B", "Q2")])
+    result = store.get_random()
+    assert result is not None
+    assert result.focus_area in ("A", "B")
+
+
+def test_store_get_random_returns_none_when_empty(tmp_path: Path) -> None:
+    store = QuestionBankStore(tmp_path, "ctx")
+    assert store.get_random() is None
+
+
 def test_store_uses_separate_db_per_context(tmp_path: Path) -> None:
     s1 = QuestionBankStore(tmp_path, "ctx1")
     s2 = QuestionBankStore(tmp_path, "ctx2")
