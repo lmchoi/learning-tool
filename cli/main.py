@@ -48,7 +48,13 @@ def init(
             async with AsyncAnthropic() as client:
                 metadata = await extract_context(goal_text, client)
             ContextStore(store_dir).save_context(context, metadata)
-            typer.echo(f"Extracted goal: {metadata.goal}")
+            context_yaml_path = store_dir / context / "context.yaml"
+            typer.echo(f"\nContext '{context}' ready.\n")
+            typer.echo(f"Goal: {metadata.goal}")
+            typer.echo("Focus areas:")
+            for area in metadata.focus_areas:
+                typer.echo(f"  - {area}")
+            typer.echo(f"\nTo adjust, edit: {context_yaml_path}")
 
         asyncio.run(_extract())
     else:
