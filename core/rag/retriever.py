@@ -1,6 +1,10 @@
+import logging
+
 from core.ingestion.embedder import Embedder
 from core.ingestion.store import ChunkStore
 from core.rag.similarity import top_k
+
+logger = logging.getLogger(__name__)
 
 
 class Retriever:
@@ -12,4 +16,12 @@ class Retriever:
         """Return top-k (chunk, score) pairs for a query against a stored context."""
         chunks, embeddings = self._store.load(context)
         query_embedding = self._embedder.embed([query])[0]
-        return top_k(query_embedding, embeddings, chunks, k)
+        results = top_k(query_embedding, embeddings, chunks, k)
+        logger.debug(
+            "retrieve context=%s query=%r k=%d scores=%s",
+            context,
+            query,
+            k,
+            [round(score, 3) for _, score in results],
+        )
+        return results
