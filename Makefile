@@ -2,10 +2,13 @@ ENV_FILE ?= $(HOME)/.secrets/.env
 -include $(ENV_FILE)
 export
 
-.PHONY: ingest prompt question evaluate practice serve checks test help
+.PHONY: init ingest prompt question evaluate practice serve checks test help
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-12s %s\n", $$1, $$2}'
+
+init:  ## Initialise a context from a source folder  — source=<dir> context=<name> [force=1]
+	uv run learn init --source $(source) --context $(context) $(if $(force),--force,)
 
 ingest:  ## Ingest files into a context  — context=<name> files=<paths>
 	uv run learn ingest-context $(context) $(files)
