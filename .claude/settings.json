@@ -1,6 +1,24 @@
 {
-  "enabledPlugins": {
-    "pyright-lsp@claude-plugins-official": true
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(git stash list)",
+      "Bash(uv run ruff check*)",
+      "Bash(uv run ruff format --check*)",
+      "Bash(uv run mypy*)",
+      "Bash(uv run pytest*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr create*)",
+      "Bash(gh issue list*)",
+      "Bash(gh issue view*)",
+      "Bash(gh issue create*)"
+    ]
   },
   "hooks": {
     "PostToolUse": [
@@ -28,25 +46,8 @@
       }
     ]
   },
-  "permissions": {
-    "allow": [
-      "Bash(git status)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git branch*)",
-      "Bash(git show*)",
-      "Bash(git stash list)",
-      "Bash(uv run ruff check*)",
-      "Bash(uv run ruff format --check*)",
-      "Bash(uv run mypy*)",
-      "Bash(uv run pytest*)",
-      "Bash(gh pr view*)",
-      "Bash(gh pr diff*)",
-      "Bash(gh pr list*)",
-      "Bash(gh pr create*)",
-      "Bash(gh issue list*)",
-      "Bash(gh issue view*)",
-      "Bash(gh issue create*)"
-    ]
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
   }
 }
