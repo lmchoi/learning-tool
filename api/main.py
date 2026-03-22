@@ -19,7 +19,7 @@ from api.models import EvaluateRequest, EvaluationResponse
 from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
-from core.ingestion.store import ChunkStore
+from core.ingestion.store import ChunkStore, ContextStore
 from core.models import Question, UserProfile
 from core.question.generate_gemini import generate_question_gemini
 from core.question.prompt import build_question_prompt
@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     store = ChunkStore(store_dir)
     app.state.retriever = Retriever(store=store, embedder=embedder)
     app.state.store_dir = store_dir
+    app.state.context_store = ContextStore(store_dir)
     if not os.environ.get("GEMINI_API_KEY"):
         raise ValueError("GEMINI_API_KEY is not set")
     app.state.anthropic = AsyncAnthropic()
@@ -69,7 +70,16 @@ def _get_bank_store(
 
 
 @app.get("/ui/{context_name}", response_class=HTMLResponse)
-async def get_ui(request: Request, context_name: str, query: str) -> HTMLResponse:
+async def get_ui(request: Request, context_name: str, query: str | None = None) -> HTMLResponse:
+    if query is None:
+        metadata = app.state.context_store.load_context(context_name)
+        if metadata is None:
+            raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found")
+        return templates.TemplateResponse(
+            request,
+            "start.html",
+            {"context_name": context_name, "focus_areas": metadata.focus_areas},
+        )
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     session_id = session_store.start_session()
     return templates.TemplateResponse(
