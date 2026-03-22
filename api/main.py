@@ -284,6 +284,24 @@ async def post_escalate_annotation(
     )
 
 
+@app.post("/admin/annotations/{annotation_id}/flag", response_class=HTMLResponse)
+async def post_flag_annotation(
+    request: Request,
+    annotation_id: int,
+    context_name: str,
+) -> HTMLResponse:
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    ann = session_store.load_annotation(annotation_id)
+    if ann is None:
+        raise HTTPException(status_code=404, detail="Annotation not found")
+    session_store.flag_annotation(annotation_id)
+    return templates.TemplateResponse(
+        request,
+        "flagged.html",
+        {"annotation_id": annotation_id},
+    )
+
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
