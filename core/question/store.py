@@ -1,4 +1,3 @@
-import random
 import sqlite3
 from pathlib import Path
 
@@ -46,8 +45,9 @@ class QuestionBankStore:
     def get_random(self) -> BankQuestion | None:
         """Return a random question from the bank, or None if the bank is empty."""
         with sqlite3.connect(self._db_path) as conn:
-            rows = conn.execute("SELECT id, focus_area, question FROM bank_questions").fetchall()
-        if not rows:
+            row = conn.execute(
+                "SELECT id, focus_area, question FROM bank_questions ORDER BY RANDOM() LIMIT 1"
+            ).fetchone()
+        if row is None:
             return None
-        row = random.choice(rows)
         return BankQuestion(id=row[0], focus_area=row[1], question=row[2])
