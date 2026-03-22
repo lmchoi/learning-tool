@@ -7,4 +7,5 @@
 - [Preferred coding patterns](feedback_coding_patterns.md) — Python idioms to apply: walrus operator in list comprehensions to avoid double function calls
 - [Langfuse reference](reference_langfuse.md) — LLM observability tool the user wants to explore, tracked in GitHub issue #19
 - [Worktree setup steps](project_worktree_setup.md) — symlink contexts folder after creating a new worktree
+- [Use closing keywords in PRs](feedback_pr_closing_keywords.md) — use `closes #<n>` in PR body so issues auto-close on merge
 - [User Python level and background](user_python_level.md) — Java/Clojure professional, Python is not primary — use Java/Clojure analogies when explaining Python
