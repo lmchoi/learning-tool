@@ -72,6 +72,12 @@ def test_get_ui_triggers_question_load_on_page_load(client: TestClient) -> None:
     assert "hx-trigger" in response.text
 
 
+def test_get_ui_loads_from_bank_endpoint(client: TestClient) -> None:
+    response = client.get("/ui/my-context?query=topic")
+
+    assert "/ui/my-context/question/bank" in response.text
+
+
 def test_get_ui_without_query_shows_focus_area_picker(client: TestClient) -> None:
     app.state.context_store = MagicMock()
     app.state.context_store.load_context.return_value = METADATA

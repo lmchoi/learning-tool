@@ -366,12 +366,16 @@ async def post_flag_annotation(
 
 
 @app.get("/contexts/{context_name}/questions")
-async def get_bank_question(context_name: str, pick: str | None = None) -> dict[str, object]:
+async def get_bank_question(
+    context_name: str,
+    pick: str | None = None,
+    focus_area: str | None = None,
+) -> dict[str, object]:
     if pick != "random":
         logger.warning("422 invalid pick param: %r", pick)
         raise HTTPException(status_code=422, detail="pick must be 'random'")
     bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
-    question = await asyncio.to_thread(bank_store.get_random)
+    question = await asyncio.to_thread(bank_store.get_random, focus_area)
     if question is None:
         return {"question": None}
     return {
@@ -381,6 +385,34 @@ async def get_bank_question(context_name: str, pick: str | None = None) -> dict[
             "question": question.question,
         }
     }
+
+
+@app.get("/ui/{context_name}/question/bank", response_class=HTMLResponse)
+async def get_bank_question_fragment(
+    request: Request,
+    context_name: str,
+    focus_area: str,
+    session_id: str,
+) -> HTMLResponse:
+    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
+    question = await asyncio.to_thread(bank_store.get_random, focus_area)
+    if question is None:
+        return templates.TemplateResponse(
+            request,
+            "bank_empty.html",
+            {"context_name": context_name, "focus_area": focus_area, "session_id": session_id},
+        )
+    return templates.TemplateResponse(
+        request,
+        "question.html",
+        {
+            "context_name": context_name,
+            "question": question.question,
+            "question_id": question.id,
+            "query": focus_area,
+            "session_id": session_id,
+        },
+    )
 
 
 @app.get("/health")

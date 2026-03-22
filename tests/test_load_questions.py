@@ -127,6 +127,20 @@ def test_store_get_random_returns_none_when_empty(tmp_path: Path) -> None:
     assert store.get_random() is None
 
 
+def test_store_get_random_filters_by_focus_area(tmp_path: Path) -> None:
+    store = QuestionBankStore(tmp_path, "ctx")
+    store.add([BankQuestion.from_parts("A", "Q1"), BankQuestion.from_parts("B", "Q2")])
+    result = store.get_random(focus_area="A")
+    assert result is not None
+    assert result.focus_area == "A"
+
+
+def test_store_get_random_returns_none_for_unmatched_focus_area(tmp_path: Path) -> None:
+    store = QuestionBankStore(tmp_path, "ctx")
+    store.add([BankQuestion.from_parts("A", "Q1")])
+    assert store.get_random(focus_area="B") is None
+
+
 def test_store_uses_separate_db_per_context(tmp_path: Path) -> None:
     s1 = QuestionBankStore(tmp_path, "ctx1")
     s2 = QuestionBankStore(tmp_path, "ctx2")
