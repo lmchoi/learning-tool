@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ context_name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --primary: #db2777;
+        --secondary: #2563eb;
+        --surface: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+      }
+
+      body {
+        font-family: "IBM Plex Mono", monospace;
+        color: var(--text);
+        background: var(--surface);
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 32px 16px;
+      }
+
+      h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 8px;
+      }
+
+      p {
+        font-size: 16px;
+        color: var(--muted);
+        margin: 0 0 32px;
+      }
+
+      .focus-areas {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .focus-area {
+        display: block;
+        border: 2px solid var(--secondary);
+        border-radius: 6px;
+        padding: 16px 20px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text);
+        text-decoration: none;
+      }
+
+      .focus-area:hover {
+        background: var(--secondary);
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>{{ context_name }}</h1>
+    <p>Pick a focus area to practise.</p>
+    <div class="focus-areas">
+      {% for area in focus_areas %}
+      <a class="focus-area" href="/ui/{{ context_name }}?query={{ area | urlencode }}">{{ area }}</a>
+      {% endfor %}
+    </div>
+  </body>
+</html>
