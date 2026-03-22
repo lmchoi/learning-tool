@@ -51,9 +51,10 @@ def init(
             context_yaml_path = store_dir / context / "context.yaml"
             typer.echo(f"\nContext '{context}' ready.\n")
             typer.echo(f"Goal: {metadata.goal}")
-            typer.echo("Focus areas:")
-            for area in metadata.focus_areas:
-                typer.echo(f"  - {area}")
+            if metadata.focus_areas:
+                typer.echo("Focus areas:")
+                for area in metadata.focus_areas:
+                    typer.echo(f"  - {area}")
             typer.echo(f"\nTo adjust, edit: {context_yaml_path}")
 
         asyncio.run(_extract())
