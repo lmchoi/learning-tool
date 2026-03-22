@@ -22,6 +22,7 @@ from core.ingestion.store import ChunkStore
 from core.models import Question, UserProfile
 from core.question.generate_gemini import generate_question_gemini
 from core.question.prompt import build_question_prompt
+from core.question.store import QuestionBankStore
 from core.rag.retriever import Retriever
 from core.session.store import SessionStore
 from core.settings import GITHUB_REPO, GITHUB_TOKEN, STORE_DIR
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.anthropic = AsyncAnthropic()
     app.state.gemini = genai.Client()
     app.state.session_stores = {}  # dict[str, SessionStore], keyed by context name
+    app.state.bank_stores = {}  # dict[str, QuestionBankStore], keyed by context name
     yield
 
 
@@ -53,6 +55,14 @@ def _get_session_store(
 ) -> SessionStore:
     if context not in cache:
         cache[context] = SessionStore(store_dir, context)
+    return cache[context]
+
+
+def _get_bank_store(
+    cache: dict[str, QuestionBankStore], store_dir: Path, context: str
+) -> QuestionBankStore:
+    if context not in cache:
+        cache[context] = QuestionBankStore(store_dir, context)
     return cache[context]
 
 
@@ -304,6 +314,23 @@ async def post_flag_annotation(
         "flagged.html",
         {"annotation_id": annotation_id},
     )
+
+
+@app.get("/contexts/{context_name}/questions")
+async def get_bank_question(context_name: str, pick: str | None = None) -> dict[str, object]:
+    if pick != "random":
+        raise HTTPException(status_code=422, detail="pick must be 'random'")
+    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
+    question = await asyncio.to_thread(bank_store.get_random)
+    if question is None:
+        return {"question": None}
+    return {
+        "question": {
+            "id": question.id,
+            "focus_area": question.focus_area,
+            "question": question.question,
+        }
+    }
 
 
 @app.get("/health")
