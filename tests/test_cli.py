@@ -48,6 +48,77 @@ def test_init_warns_and_exits_when_context_exists(tmp_path: Path) -> None:
     assert "my-context" in result.output
     assert "LLM evaluation" in result.output
     assert "Python async" in result.output
+    assert "--force" in result.output
+
+
+def test_init_force_reingest_overwrites_existing_context(tmp_path: Path) -> None:
+    source = tmp_path / "docs"
+    source.mkdir()
+    (source / "doc.md").write_text("Updated content.")
+    store_dir = tmp_path / "store"
+    ctx_store = ContextStore(store_dir)
+    ctx_store.save_context(
+        "my-context",
+        ContextMetadata(goal="Old goal.", focus_areas=["old area"]),
+    )
+
+    with patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)):
+        result = runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                str(source),
+                "--context",
+                "my-context",
+                "--store-dir",
+                str(store_dir),
+                "--force",
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "already exists" not in result.output
+    store = ChunkStore(store_dir)
+    chunks, _ = store.load("my-context")
+    assert any("Updated content" in c for c in chunks)
+
+
+def test_init_force_reingest_updates_context_yaml(tmp_path: Path) -> None:
+    source = tmp_path / "docs"
+    source.mkdir()
+    (source / "doc.md").write_text("Some content.")
+    (source / "GOAL.md").write_text("I want to prepare for my biology exam.")
+    store_dir = tmp_path / "store"
+    ctx_store = ContextStore(store_dir)
+    ctx_store.save_context(
+        "my-context",
+        ContextMetadata(goal="Old goal.", focus_areas=["old area"]),
+    )
+
+    with (
+        patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)),
+        patch("cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                str(source),
+                "--context",
+                "my-context",
+                "--store-dir",
+                str(store_dir),
+                "--force",
+            ],
+        )
+
+    assert result.exit_code == 0
+    loaded = ContextStore(store_dir).load_context("my-context")
+    assert loaded is not None
+    assert loaded.goal == _FAKE_METADATA.goal
+    assert loaded.focus_areas == _FAKE_METADATA.focus_areas
 
 
 def test_init_ingests_supported_files(tmp_path: Path) -> None:
