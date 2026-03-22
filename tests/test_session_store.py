@@ -277,3 +277,59 @@ def test_chunks_score_migration(tmp_path: Path) -> None:
     attempt_id = store.record(session_id, "Q2?", "A2.", 7)
     store.record_chunks(attempt_id, [("new chunk", 0.85)])
     assert store.load_chunks(attempt_id) == [("new chunk", 0.85)]
+
+
+def test_record_stores_prompt_text(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q?", "A.", 7, prompt_text="You are a tutor. Generate a question.")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT prompt_text FROM attempts").fetchone()
+    assert row[0] == "You are a tutor. Generate a question."
+
+
+def test_record_prompt_text_defaults_to_none(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q?", "A.", 7)
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT prompt_text FROM attempts").fetchone()
+    assert row[0] is None
+
+
+def test_prompt_text_migration(tmp_path: Path) -> None:
+    """Migration adds prompt_text column to existing attempts table that lacks it."""
+    ctx_dir = tmp_path / "ctx"
+    ctx_dir.mkdir()
+    db_path = ctx_dir / "sessions.db"
+
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            "CREATE TABLE sessions"
+            " (session_id TEXT PRIMARY KEY, context TEXT NOT NULL, started_at TEXT NOT NULL);"
+            "CREATE TABLE attempts"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,"
+            " question_id TEXT, question_text TEXT NOT NULL, answer_text TEXT NOT NULL,"
+            " score INTEGER NOT NULL, result_json TEXT, timestamp TEXT NOT NULL);"
+            "INSERT INTO sessions VALUES ('s1', 'ctx', '2024-01-01T00:00:00+00:00');"
+            "INSERT INTO attempts"
+            " VALUES (1, 's1', NULL, 'Q?', 'A.', 5, NULL, '2024-01-01T00:00:00+00:00');"
+        )
+
+    store = SessionStore(tmp_path, "ctx")
+
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT prompt_text FROM attempts WHERE id = 1").fetchone()
+    assert row[0] is None
+
+    session_id = store.start_session()
+    attempt_id = store.record(session_id, "Q2?", "A2.", 8, prompt_text="New prompt.")
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT prompt_text FROM attempts WHERE id = ?", (attempt_id,)
+        ).fetchone()
+    assert row[0] == "New prompt."

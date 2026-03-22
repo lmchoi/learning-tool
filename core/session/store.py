@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS attempts (
     answer_text   TEXT NOT NULL,
     score         INTEGER NOT NULL,
     result_json   TEXT,
-    timestamp     TEXT NOT NULL
+    timestamp     TEXT NOT NULL,
+    prompt_text   TEXT
 );
 
 CREATE TABLE IF NOT EXISTS chunks (
@@ -63,6 +64,8 @@ class SessionStore:
             conn.execute("ALTER TABLE attempts ADD COLUMN question_id TEXT")
         if "result_json" not in attempts_cols:
             conn.execute("ALTER TABLE attempts ADD COLUMN result_json TEXT")
+        if "prompt_text" not in attempts_cols:
+            conn.execute("ALTER TABLE attempts ADD COLUMN prompt_text TEXT")
         tables = {
             row[0]
             for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
@@ -115,6 +118,7 @@ class SessionStore:
         score: int,
         question_id: str | None = None,
         result_json: str | None = None,
+        prompt_text: str | None = None,
     ) -> int:
         """Record an attempt with the current timestamp. Returns the attempt id."""
         return self._add_attempt(
@@ -127,6 +131,7 @@ class SessionStore:
                 timestamp=datetime.now(UTC).isoformat(),
             ),
             result_json=result_json,
+            prompt_text=prompt_text,
         )
 
     def record_annotation(
@@ -245,13 +250,18 @@ class SessionStore:
                 (session_id, self._context, started_at),
             )
 
-    def _add_attempt(self, attempt: QuestionAttempt, result_json: str | None = None) -> int:
+    def _add_attempt(
+        self,
+        attempt: QuestionAttempt,
+        result_json: str | None = None,
+        prompt_text: str | None = None,
+    ) -> int:
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.execute(
                 "INSERT INTO attempts"
                 " (session_id, question_id, question_text, answer_text,"
-                " score, result_json, timestamp)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                " score, result_json, timestamp, prompt_text)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     attempt.session_id,
                     attempt.question_id,
@@ -260,6 +270,7 @@ class SessionStore:
                     attempt.score,
                     result_json,
                     attempt.timestamp,
+                    prompt_text,
                 ),
             )
             return cursor.lastrowid  # type: ignore[return-value]  # always set after INSERT on autoincrement table
