@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import uuid
 from collections.abc import AsyncIterator
@@ -26,23 +27,33 @@ from core.question.prompt import build_question_prompt
 from core.question.store import QuestionBankStore
 from core.rag.retriever import Retriever
 from core.session.store import SessionStore
-from core.settings import GITHUB_REPO, GITHUB_TOKEN, STORE_DIR
+from core.settings import GITHUB_REPO, GITHUB_TOKEN, LOG_LEVEL, STORE_DIR
+
+logger = logging.getLogger(__name__)
 
 _GITHUB_CONFIGURED = bool(GITHUB_TOKEN and GITHUB_REPO)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
     store_dir = STORE_DIR
+    logger.info("store dir: %s", store_dir)
     embedder = SentenceTransformerEmbedder()
     store = ChunkStore(store_dir)
     app.state.retriever = Retriever(store=store, embedder=embedder)
+    logger.info("retriever ready")
     app.state.store_dir = store_dir
     app.state.context_store = ContextStore(store_dir)
     if not os.environ.get("GEMINI_API_KEY"):
         raise ValueError("GEMINI_API_KEY is not set")
     app.state.anthropic = AsyncAnthropic()
+    logger.info("anthropic client ready")
     app.state.gemini = genai.Client()
+    logger.info("gemini client ready")
     app.state.session_stores = {}  # dict[str, SessionStore], keyed by context name
     app.state.bank_stores = {}  # dict[str, QuestionBankStore], keyed by context name
     yield
