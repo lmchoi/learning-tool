@@ -25,6 +25,32 @@ def source_dir(tmp_path: Path) -> Path:
     return source
 
 
+def test_init_warns_and_exits_when_context_exists(tmp_path: Path) -> None:
+    source = tmp_path / "docs"
+    source.mkdir()
+    (source / "doc.md").write_text("Some content.")
+    store_dir = tmp_path / "store"
+    ctx_store = ContextStore(store_dir)
+    ctx_store.save_context(
+        "my-context",
+        ContextMetadata(
+            goal="Preparing for an interview.",
+            focus_areas=["LLM evaluation", "Python async"],
+        ),
+    )
+
+    result = runner.invoke(
+        app,
+        ["init", "--source", str(source), "--context", "my-context", "--store-dir", str(store_dir)],
+    )
+
+    assert result.exit_code == 1
+    assert "my-context" in result.output
+    assert "LLM evaluation" in result.output
+    assert "Python async" in result.output
+    assert "--force" in result.output
+
+
 def test_init_ingests_supported_files(tmp_path: Path) -> None:
     source = tmp_path / "docs"
     source.mkdir()
