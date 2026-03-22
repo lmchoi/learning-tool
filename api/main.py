@@ -211,6 +211,7 @@ async def get_admin_annotations(
     context_name: str,
     target_type: str | None = None,
     sentiment: str | None = None,
+    flagged: bool = False,
 ) -> HTMLResponse:
     if target_type is not None and target_type not in _VALID_TARGET_TYPES:
         raise HTTPException(
@@ -219,7 +220,9 @@ async def get_admin_annotations(
     if sentiment is not None and sentiment not in _VALID_SENTIMENTS:
         raise HTTPException(status_code=422, detail=f"sentiment must be one of {_VALID_SENTIMENTS}")
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    raw = session_store.load_annotations(target_type=target_type, sentiment=sentiment)
+    raw = session_store.load_annotations(
+        target_type=target_type, sentiment=sentiment, flagged=flagged
+    )
     for ann in raw:
         rj = ann.get("result_json")
         ann["result"] = json.loads(rj) if isinstance(rj, str) else None
@@ -231,6 +234,7 @@ async def get_admin_annotations(
             "annotations": raw,
             "target_type": target_type or "",
             "sentiment": sentiment or "",
+            "flagged": flagged,
             "github_configured": _GITHUB_CONFIGURED,
         },
     )
