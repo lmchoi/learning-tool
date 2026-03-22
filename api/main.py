@@ -126,7 +126,7 @@ async def post_evaluate_fragment(
         question_id=question_id,
         result_json=result.model_dump_json(),
     )
-    session_store.record_chunks(attempt_id, chunks)
+    session_store.record_chunks(attempt_id, results)
     return templates.TemplateResponse(
         request,
         "feedback.html",

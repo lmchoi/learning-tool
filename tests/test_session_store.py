@@ -138,7 +138,7 @@ def test_load_annotations_returns_joined_data(tmp_path: Path) -> None:
     attempt_id = store.record(
         session_id, "Q?", "A.", 6, question_id="qid-1", result_json='{"score": 6}'
     )
-    store.record_chunks(attempt_id, ["chunk a", "chunk b"])
+    store.record_chunks(attempt_id, [("chunk a", 0.9), ("chunk b", 0.8)])
     store.record_annotation("qid-1", "evaluation", "down", comment="Off target")
 
     annotations = store.load_annotations()
@@ -152,7 +152,7 @@ def test_load_annotations_returns_joined_data(tmp_path: Path) -> None:
     assert ann["target_type"] == "evaluation"
     assert ann["sentiment"] == "down"
     assert ann["comment"] == "Off target"
-    assert ann["chunks"] == ["chunk a", "chunk b"]
+    assert ann["chunks"] == [("chunk a", 0.9), ("chunk b", 0.8)]
 
 
 def test_load_annotations_filter_by_target_type(tmp_path: Path) -> None:
@@ -186,10 +186,10 @@ def test_record_chunks_and_load_chunks(tmp_path: Path) -> None:
     session_id = store.start_session()
     attempt_id = store.record(session_id, "Q?", "A.", 5)
 
-    store.record_chunks(attempt_id, ["chunk one", "chunk two", "chunk three"])
+    store.record_chunks(attempt_id, [("chunk one", 0.9), ("chunk two", 0.8), ("chunk three", 0.7)])
 
     loaded = store.load_chunks(attempt_id)
-    assert loaded == ["chunk one", "chunk two", "chunk three"]
+    assert loaded == [("chunk one", 0.9), ("chunk two", 0.8), ("chunk three", 0.7)]
 
 
 def test_load_chunks_empty(tmp_path: Path) -> None:
@@ -206,11 +206,11 @@ def test_record_chunks_isolated_per_attempt(tmp_path: Path) -> None:
     attempt_a = store.record(session_id, "Q1?", "A1.", 5)
     attempt_b = store.record(session_id, "Q2?", "A2.", 7)
 
-    store.record_chunks(attempt_a, ["chunk for a"])
-    store.record_chunks(attempt_b, ["chunk for b"])
+    store.record_chunks(attempt_a, [("chunk for a", 0.9)])
+    store.record_chunks(attempt_b, [("chunk for b", 0.8)])
 
-    assert store.load_chunks(attempt_a) == ["chunk for a"]
-    assert store.load_chunks(attempt_b) == ["chunk for b"]
+    assert store.load_chunks(attempt_a) == [("chunk for a", 0.9)]
+    assert store.load_chunks(attempt_b) == [("chunk for b", 0.8)]
 
 
 def test_record_annotation_evaluation_target_type(tmp_path: Path) -> None:
@@ -239,3 +239,41 @@ def test_record_annotation_unique_per_question_and_target_type(tmp_path: Path) -
         rows = conn.execute("SELECT comment FROM annotations").fetchall()
     assert len(rows) == 1
     assert rows[0][0] == "Updated report"
+
+
+def test_chunks_score_migration(tmp_path: Path) -> None:
+    """Migration adds score column to existing chunks table that lacks it."""
+    ctx_dir = tmp_path / "ctx"
+    ctx_dir.mkdir()
+    db_path = ctx_dir / "sessions.db"
+
+    # Simulate a pre-migration DB: chunks table without score column
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            "CREATE TABLE sessions"
+            " (session_id TEXT PRIMARY KEY, context TEXT NOT NULL, started_at TEXT NOT NULL);"
+            "CREATE TABLE attempts"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,"
+            " question_id TEXT, question_text TEXT NOT NULL, answer_text TEXT NOT NULL,"
+            " score INTEGER NOT NULL, result_json TEXT, timestamp TEXT NOT NULL);"
+            "CREATE TABLE chunks"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            " attempt_id INTEGER NOT NULL, chunk_text TEXT NOT NULL);"
+            "INSERT INTO sessions VALUES ('s1', 'ctx', '2024-01-01T00:00:00+00:00');"
+            "INSERT INTO attempts"
+            " VALUES (1, 's1', NULL, 'Q?', 'A.', 5, NULL, '2024-01-01T00:00:00+00:00');"
+            "INSERT INTO chunks (attempt_id, chunk_text) VALUES (1, 'old chunk');"
+        )
+
+    # Opening SessionStore should run migration and add score column
+    store = SessionStore(tmp_path, "ctx")
+
+    # Migrated row has score = NULL
+    loaded = store.load_chunks(1)
+    assert loaded == [("old chunk", None)]
+
+    # New chunks can be stored with scores
+    session_id = store.start_session()
+    attempt_id = store.record(session_id, "Q2?", "A2.", 7)
+    store.record_chunks(attempt_id, [("new chunk", 0.85)])
+    assert store.load_chunks(attempt_id) == [("new chunk", 0.85)]
