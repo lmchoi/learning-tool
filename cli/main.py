@@ -13,7 +13,9 @@ from core.ingestion.sources import walk_source_dir
 from core.ingestion.store import ChunkStore, ContextStore
 from core.models import UserProfile
 from core.question.generate import generate_question
+from core.question.loader import load_questions
 from core.question.prompt import build_question_prompt
+from core.question.store import QuestionBankStore
 from core.rag.retriever import Retriever
 from core.session.store import SessionStore
 from core.settings import STORE_DIR as DEFAULT_STORE
@@ -86,6 +88,26 @@ def ingest_context(
     embedder = SentenceTransformerEmbedder()
     ingest(context=context, paths=files, embedder=embedder, store=store)
     typer.echo(f"Ingested {len(files)} file(s) into context '{context}'")
+
+
+@app.command()
+def load_questions_cmd(
+    context: str = typer.Option(..., help="Context name"),
+    file: Path = typer.Option(..., help="Path to YAML question file"),
+    store_dir: Path = typer.Option(DEFAULT_STORE, help="Path to the store"),
+) -> None:
+    """Load questions from a YAML file into the question bank."""
+    if not file.exists():
+        typer.echo(f"Error: file not found: {file}", err=True)
+        raise typer.Exit(code=1)
+    try:
+        questions = load_questions(file)
+    except ValueError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    bank = QuestionBankStore(store_dir, context)
+    added = bank.add(questions)
+    typer.echo(f"Loaded {added} new question(s) into '{context}' ({len(questions)} in file).")
 
 
 def _build_prompt(

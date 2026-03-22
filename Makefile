@@ -2,7 +2,7 @@ ENV_FILE ?= $(HOME)/.secrets/.env
 -include $(ENV_FILE)
 export
 
-.PHONY: init ingest prompt question evaluate practice serve checks test help
+.PHONY: init ingest load-questions prompt question evaluate practice serve checks test help
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -12,6 +12,9 @@ init:  ## Initialise a context from a source folder  — source=<dir> context=<n
 
 ingest:  ## Ingest files into a context  — context=<name> files=<paths>
 	uv run learn ingest-context $(context) $(files)
+
+load-questions:  ## Load questions from a YAML file into the bank  — context=<name> file=<path>
+	uv run learn load-questions-cmd --context $(context) --file $(file)
 
 prompt:  ## Print the question prompt without calling the API  — context=<name> query=<topic>
 	uv run learn question-prompt $(context) "$(query)"
