@@ -26,6 +26,10 @@
         <option value="down" {% if sentiment == "down" %}selected{% endif %}>Down</option>
       </select>
     </label>
+    <label>
+      <input type="checkbox" name="flagged" value="true" {% if flagged %}checked{% endif %} />
+      Flagged only
+    </label>
     <button type="submit">Filter</button>
   </form>
 

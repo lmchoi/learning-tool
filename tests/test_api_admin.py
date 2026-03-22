@@ -78,7 +78,7 @@ def test_get_admin_annotations_passes_filters(
     mock_session_store.load_annotations.return_value = []
     client.get("/admin/annotations?context_name=ctx&target_type=evaluation&sentiment=down")
     mock_session_store.load_annotations.assert_called_once_with(
-        target_type="evaluation", sentiment="down"
+        target_type="evaluation", sentiment="down", flagged=False
     )
 
 
@@ -87,4 +87,16 @@ def test_get_admin_annotations_empty_filters_pass_none(
 ) -> None:
     mock_session_store.load_annotations.return_value = []
     client.get("/admin/annotations?context_name=ctx")
-    mock_session_store.load_annotations.assert_called_once_with(target_type=None, sentiment=None)
+    mock_session_store.load_annotations.assert_called_once_with(
+        target_type=None, sentiment=None, flagged=False
+    )
+
+
+def test_get_admin_annotations_flagged_filter(
+    client: TestClient, mock_session_store: MagicMock
+) -> None:
+    mock_session_store.load_annotations.return_value = []
+    client.get("/admin/annotations?context_name=ctx&flagged=true")
+    mock_session_store.load_annotations.assert_called_once_with(
+        target_type=None, sentiment=None, flagged=True
+    )
