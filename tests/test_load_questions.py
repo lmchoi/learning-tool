@@ -40,20 +40,30 @@ def test_load_questions_parses_yaml(tmp_path: Path) -> None:
     f.write_text(
         yaml.dump(
             [
-                {"focus_area": "Agent Development", "question": "Describe the core loop."},
-                {"focus_area": "Prompt Engineering", "question": "How do you improve a prompt?"},
+                {
+                    "focus_area": "Agent Development",
+                    "questions": [
+                        "Describe the core loop.",
+                        "What happens when a tool call fails?",
+                    ],
+                },
+                {
+                    "focus_area": "Prompt Engineering",
+                    "questions": ["How do you improve a prompt?"],
+                },
             ]
         )
     )
     questions = load_questions(f)
-    assert len(questions) == 2
+    assert len(questions) == 3
     assert questions[0].focus_area == "Agent Development"
-    assert questions[1].question == "How do you improve a prompt?"
+    assert questions[0].question == "Describe the core loop."
+    assert questions[2].focus_area == "Prompt Engineering"
 
 
 def test_load_questions_assigns_deterministic_ids(tmp_path: Path) -> None:
     f = tmp_path / "questions.yaml"
-    f.write_text(yaml.dump([{"focus_area": "X", "question": "Q"}]))
+    f.write_text(yaml.dump([{"focus_area": "X", "questions": ["Q"]}]))
     [q] = load_questions(f)
     assert q.id == BankQuestion.make_id("X", "Q")
 
@@ -69,6 +79,13 @@ def test_load_questions_raises_on_missing_key(tmp_path: Path) -> None:
     f = tmp_path / "bad.yaml"
     f.write_text(yaml.dump([{"focus_area": "X"}]))
     with pytest.raises(ValueError, match="missing"):
+        load_questions(f)
+
+
+def test_load_questions_raises_when_questions_not_a_list(tmp_path: Path) -> None:
+    f = tmp_path / "bad.yaml"
+    f.write_text(yaml.dump([{"focus_area": "X", "questions": "not a list"}]))
+    with pytest.raises(ValueError, match="must be a list"):
         load_questions(f)
 
 
@@ -111,8 +128,17 @@ def _write_questions_yaml(path: Path) -> None:
     path.write_text(
         yaml.dump(
             [
-                {"focus_area": "Agent Development", "question": "Describe the core loop."},
-                {"focus_area": "Prompt Engineering", "question": "How do you improve a prompt?"},
+                {
+                    "focus_area": "Agent Development",
+                    "questions": [
+                        "Describe the core loop.",
+                        "What happens when a tool call fails?",
+                    ],
+                },
+                {
+                    "focus_area": "Prompt Engineering",
+                    "questions": ["How do you improve a prompt?"],
+                },
             ]
         )
     )
@@ -134,9 +160,9 @@ def test_load_questions_cmd_loads_questions(tmp_path: Path) -> None:
         ],
     )
     assert result.exit_code == 0
-    assert "2 new question(s)" in result.output
+    assert "3 new question(s)" in result.output
     bank = QuestionBankStore(tmp_path, "myctx")
-    assert len(bank.list()) == 2
+    assert len(bank.list()) == 3
 
 
 def test_load_questions_cmd_is_idempotent(tmp_path: Path) -> None:
@@ -155,7 +181,7 @@ def test_load_questions_cmd_is_idempotent(tmp_path: Path) -> None:
     result = runner.invoke(app, args)
     assert result.exit_code == 0
     assert "0 new question(s)" in result.output
-    assert len(QuestionBankStore(tmp_path, "myctx").list()) == 2
+    assert len(QuestionBankStore(tmp_path, "myctx").list()) == 3
 
 
 def test_load_questions_cmd_fails_for_invalid_yaml_structure(tmp_path: Path) -> None:
