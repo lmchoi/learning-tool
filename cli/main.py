@@ -6,10 +6,11 @@ from anthropic import AsyncAnthropic
 
 from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.prompt import build_evaluation_prompt
+from core.ingestion.context import extract_context
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.ingest import ingest
 from core.ingestion.sources import walk_source_dir
-from core.ingestion.store import ChunkStore
+from core.ingestion.store import ChunkStore, ContextStore
 from core.models import UserProfile
 from core.question.generate import generate_question
 from core.question.prompt import build_question_prompt
@@ -38,6 +39,20 @@ def init(
     embedder = SentenceTransformerEmbedder()
     ingest(context=context, paths=paths, embedder=embedder, store=store)
     typer.echo(f"Ingested {len(paths)} file(s) into context '{context}'")
+
+    goal_file = source / "GOAL.md"
+    if goal_file.exists():
+        goal_text = goal_file.read_text()
+
+        async def _extract() -> None:
+            async with AsyncAnthropic() as client:
+                metadata = await extract_context(goal_text, client)
+            ContextStore(store_dir).save_context(context, metadata)
+            typer.echo(f"Extracted goal: {metadata.goal}")
+
+        asyncio.run(_extract())
+    else:
+        typer.echo("No GOAL.md found — skipping context extraction")
 
 
 @app.command()
