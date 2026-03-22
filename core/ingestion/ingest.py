@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pypdf
@@ -5,6 +6,8 @@ import pypdf
 from core.ingestion.chunker import chunk_document
 from core.ingestion.embedder import Embedder
 from core.ingestion.store import ChunkStore
+
+logger = logging.getLogger(__name__)
 
 
 def _read_file(path: Path) -> str:
@@ -20,8 +23,15 @@ def ingest(context: str, paths: list[Path], embedder: Embedder, store: ChunkStor
 
     for path in paths:
         if not path.exists():
+            logger.error("source file not found: %s", path)
             raise FileNotFoundError(f"Source file not found: {path}")
-        all_chunks.extend(chunk_document(_read_file(path)))
+        logger.debug("reading %s", path)
+        file_chunks = chunk_document(_read_file(path))
+        logger.debug("%s → %d chunk(s)", path.name, len(file_chunks))
+        all_chunks.extend(file_chunks)
 
+    logger.info("context=%s files=%d total_chunks=%d", context, len(paths), len(all_chunks))
+    logger.debug("embedding %d chunks", len(all_chunks))
     embeddings = embedder.embed(all_chunks)
     store.save(context, all_chunks, embeddings)
+    logger.info("saved %d chunks for context=%s", len(all_chunks), context)

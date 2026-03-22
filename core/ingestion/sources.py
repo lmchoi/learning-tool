@@ -1,15 +1,25 @@
+import logging
 from pathlib import Path
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 _SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf"}
 
 
 def walk_source_dir(source_dir: Path) -> list[Path]:
     """Return all supported document files in source_dir, recursively."""
-    return sorted(
-        p for p in source_dir.rglob("*") if p.is_file() and p.suffix in _SUPPORTED_EXTENSIONS
-    )
+    found = []
+    for p in sorted(source_dir.rglob("*")):
+        if not p.is_file():
+            continue
+        if p.suffix in _SUPPORTED_EXTENSIONS:
+            logger.debug("found %s", p)
+            found.append(p)
+        else:
+            logger.debug("skipped %s (unsupported type)", p)
+    return found
 
 
 def load_sources(sources_file: Path) -> list[Path]:
