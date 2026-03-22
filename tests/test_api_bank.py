@@ -58,3 +58,9 @@ def test_get_bank_question_returns_422_without_pick(client_empty_bank: TestClien
     response = client_empty_bank.get("/contexts/myctx/questions")
 
     assert response.status_code == 422
+
+
+def test_get_bank_question_returns_422_for_invalid_pick(client_empty_bank: TestClient) -> None:
+    response = client_empty_bank.get("/contexts/myctx/questions?pick=list")
+
+    assert response.status_code == 422
