@@ -316,3 +316,48 @@ def test_flag_annotation_does_not_affect_sentiment(tmp_path: Path) -> None:
             "SELECT sentiment FROM annotations WHERE id = ?", (annotation_id,)
         ).fetchone()
     assert row[0] == "up"
+
+
+def test_load_annotations_filter_flagged(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    store.start_session()
+    store.record_annotation("qid-1", "question", "down")
+    store.record_annotation("qid-2", "question", "up")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        annotation_id = conn.execute(
+            "SELECT id FROM annotations WHERE question_id = 'qid-1'"
+        ).fetchone()[0]
+
+    store.flag_annotation(annotation_id)
+
+    flagged = store.load_annotations(flagged=True)
+    assert len(flagged) == 1
+    assert flagged[0]["question_id"] == "qid-1"
+    assert flagged[0]["flagged_at"] is not None
+
+    all_annotations = store.load_annotations()
+    assert len(all_annotations) == 2
+
+
+def test_load_annotations_flagged_and_sentiment_combined(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    store.start_session()
+    store.record_annotation("qid-1", "question", "down")
+    store.record_annotation("qid-2", "question", "up")
+    store.record_annotation("qid-3", "question", "down")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        rows = conn.execute(
+            "SELECT id, question_id FROM annotations WHERE question_id IN ('qid-1', 'qid-2')"
+        ).fetchall()
+    id_map = {qid: aid for aid, qid in rows}
+
+    store.flag_annotation(id_map["qid-1"])  # flagged + down
+    store.flag_annotation(id_map["qid-2"])  # flagged + up
+
+    results = store.load_annotations(flagged=True, sentiment="down")
+    assert len(results) == 1
+    assert results[0]["question_id"] == "qid-1"

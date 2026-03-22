@@ -185,6 +185,7 @@ class SessionStore:
         target_type: str | None = None,
         sentiment: str | None = None,
         annotation_id: int | None = None,
+        flagged: bool = False,
     ) -> list[dict[str, object]]:
         """Return annotations joined with attempt context, newest first."""
         filters = []
@@ -198,6 +199,8 @@ class SessionStore:
         if sentiment is not None:
             filters.append("a.sentiment = ?")
             params.append(sentiment)
+        if flagged:
+            filters.append("a.flagged_at IS NOT NULL")
         where = ("WHERE " + " AND ".join(filters)) if filters else ""
         query = f"""
             SELECT
