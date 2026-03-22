@@ -71,6 +71,19 @@
       <p><strong>Learner comment:</strong> "{{ ann.comment }}"</p>
       {% endif %}
       <p class="annotation-date">{{ ann.created_at }}</p>
+      <div id="flag-{{ ann.id }}">
+        {% if ann.flagged_at %}
+        <span class="flagged">Flagged for review</span>
+        {% else %}
+        <button
+          hx-post="/admin/annotations/{{ ann.id }}/flag?context_name={{ context_name }}"
+          hx-target="#flag-{{ ann.id }}"
+          hx-swap="outerHTML"
+        >
+          Flag for review
+        </button>
+        {% endif %}
+      </div>
       {% if github_configured %}
       <div id="escalate-{{ ann.id }}">
         <button
