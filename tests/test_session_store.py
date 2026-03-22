@@ -153,6 +153,7 @@ def test_load_annotations_returns_joined_data(tmp_path: Path) -> None:
     assert ann["sentiment"] == "down"
     assert ann["comment"] == "Off target"
     assert ann["chunks"] == [("chunk a", 0.9), ("chunk b", 0.8)]
+    assert ann["flagged_at"] is None
 
 
 def test_load_annotations_filter_by_target_type(tmp_path: Path) -> None:
@@ -277,3 +278,41 @@ def test_chunks_score_migration(tmp_path: Path) -> None:
     attempt_id = store.record(session_id, "Q2?", "A2.", 7)
     store.record_chunks(attempt_id, [("new chunk", 0.85)])
     assert store.load_chunks(attempt_id) == [("new chunk", 0.85)]
+
+
+def test_flag_annotation_sets_flagged_at(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    store.start_session()
+    store.record_annotation("qid-1", "question", "down")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT id, flagged_at FROM annotations").fetchone()
+    annotation_id, flagged_at = row
+    assert flagged_at is None
+
+    store.flag_annotation(annotation_id)
+
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT flagged_at FROM annotations WHERE id = ?", (annotation_id,)
+        ).fetchone()
+    assert row[0] is not None
+
+
+def test_flag_annotation_does_not_affect_sentiment(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    store.start_session()
+    store.record_annotation("qid-1", "question", "up")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        annotation_id = conn.execute("SELECT id FROM annotations").fetchone()[0]
+
+    store.flag_annotation(annotation_id)
+
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT sentiment FROM annotations WHERE id = ?", (annotation_id,)
+        ).fetchone()
+    assert row[0] == "up"
