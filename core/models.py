@@ -9,6 +9,11 @@ class UserProfile:
     experience_level: str
 
 
+class ContextMetadata(BaseModel):
+    goal: str
+    focus_areas: list[str]
+
+
 class Question(BaseModel):
     text: str
 
