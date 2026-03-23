@@ -1,5 +1,30 @@
 from core.evaluation.prompt import build_evaluation_prompt
-from core.models import UserProfile
+from core.models import ContextMetadata, UserProfile
+
+
+def test_prompt_contains_goal() -> None:
+    metadata = ContextMetadata(goal="Learn async Python", focus_areas=["asyncio"])
+    prompt = build_evaluation_prompt(
+        question="Q?",
+        answer="A.",
+        chunks=["Some context."],
+        profile=UserProfile(experience_level="beginner"),
+        metadata=metadata,
+    )
+    assert "Learn async Python" in prompt
+
+
+def test_prompt_contains_focus_areas() -> None:
+    metadata = ContextMetadata(goal="Any goal", focus_areas=["asyncio", "context managers"])
+    prompt = build_evaluation_prompt(
+        question="Q?",
+        answer="A.",
+        chunks=["Some context."],
+        profile=UserProfile(experience_level="beginner"),
+        metadata=metadata,
+    )
+    assert "asyncio" in prompt
+    assert "context managers" in prompt
 
 
 def test_prompt_contains_question() -> None:
