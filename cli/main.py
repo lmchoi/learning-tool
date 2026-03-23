@@ -140,9 +140,10 @@ def _build_prompt(
     store = ChunkStore(store_dir)
     embedder = SentenceTransformerEmbedder()
     retriever = Retriever(store=store, embedder=embedder)
+    metadata = ContextStore(store_dir).load_context(context)
     profile = UserProfile(experience_level=experience_level)
     chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
-    return build_question_prompt(chunks, profile)
+    return build_question_prompt(chunks, profile, metadata)
 
 
 @app.command()
@@ -233,6 +234,7 @@ def practice(
         chunk_store = ChunkStore(store_dir)
         embedder = SentenceTransformerEmbedder()
         retriever = Retriever(store=chunk_store, embedder=embedder)
+        metadata = ContextStore(store_dir).load_context(context)
         # Chunks are retrieved once per topic query and reused across follow-ups,
         # since follow-up questions target gaps within the same retrieved context.
         chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
@@ -243,7 +245,7 @@ def practice(
         next_question: str | None = None
         while True:
             if next_question is None:
-                prompt = build_question_prompt(chunks, profile)
+                prompt = build_question_prompt(chunks, profile, metadata)
                 result = await generate_question(prompt, client)
                 next_question = result.text
 

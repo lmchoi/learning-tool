@@ -124,8 +124,9 @@ async def get_question_fragment(
         logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
+    metadata = app.state.context_store.load_context(context_name)
     profile = UserProfile(experience_level="beginner")
-    prompt = build_question_prompt(chunks, profile)
+    prompt = build_question_prompt(chunks, profile, metadata)
     question = await generate_question_gemini(prompt, app.state.gemini)
     question_id = str(uuid.uuid4())
     return templates.TemplateResponse(
@@ -429,8 +430,9 @@ async def get_question(context_name: str, query: str) -> Question:
         logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
+    metadata = app.state.context_store.load_context(context_name)
     profile = UserProfile(experience_level="beginner")
-    prompt = build_question_prompt(chunks, profile)
+    prompt = build_question_prompt(chunks, profile, metadata)
     return await generate_question_gemini(prompt, app.state.gemini)
 
 
