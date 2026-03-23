@@ -1,5 +1,32 @@
-from core.models import UserProfile
+from core.models import ContextMetadata, UserProfile
 from core.question.prompt import build_question_prompt
+
+
+def test_prompt_contains_goal() -> None:
+    metadata = ContextMetadata(
+        goal="Learn async Python", focus_areas=["asyncio", "context managers"]
+    )
+    prompt = build_question_prompt(
+        ["Some material."], UserProfile(experience_level="beginner"), metadata
+    )
+    assert "Learn async Python" in prompt
+
+
+def test_prompt_contains_focus_areas() -> None:
+    metadata = ContextMetadata(goal="Any goal", focus_areas=["asyncio", "context managers"])
+    prompt = build_question_prompt(
+        ["Some material."], UserProfile(experience_level="beginner"), metadata
+    )
+    assert "asyncio" in prompt
+    assert "context managers" in prompt
+
+
+def test_prompt_focus_areas_steer_instructions() -> None:
+    metadata = ContextMetadata(goal="Any goal", focus_areas=["asyncio"])
+    prompt = build_question_prompt(
+        ["Some material."], UserProfile(experience_level="beginner"), metadata
+    )
+    assert "focus" in prompt.lower() or "focus areas" in prompt.lower()
 
 
 def test_prompt_contains_chunks() -> None:

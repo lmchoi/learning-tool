@@ -124,8 +124,9 @@ async def get_question_fragment(
         logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
+    metadata = app.state.context_store.load_context(context_name)
     profile = UserProfile(experience_level="beginner")
-    prompt = build_question_prompt(chunks, profile)
+    prompt = build_question_prompt(chunks, profile, metadata)
     question = await generate_question_gemini(prompt, app.state.gemini)
     question_id = str(uuid.uuid4())
     return templates.TemplateResponse(
@@ -160,9 +161,10 @@ async def post_evaluate_fragment(
         logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
+    metadata = app.state.context_store.load_context(context_name)
     profile = UserProfile(experience_level="beginner")
     prompt = build_evaluation_prompt(
-        question=question, answer=answer, chunks=chunks, profile=profile
+        question=question, answer=answer, chunks=chunks, profile=profile, metadata=metadata
     )
     result = await evaluate_answer(prompt, app.state.anthropic)
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
@@ -429,8 +431,9 @@ async def get_question(context_name: str, query: str) -> Question:
         logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
+    metadata = app.state.context_store.load_context(context_name)
     profile = UserProfile(experience_level="beginner")
-    prompt = build_question_prompt(chunks, profile)
+    prompt = build_question_prompt(chunks, profile, metadata)
     return await generate_question_gemini(prompt, app.state.gemini)
 
 
@@ -445,9 +448,14 @@ async def post_evaluate(context_name: str, body: EvaluateRequest) -> EvaluationR
         logger.warning("404 context not found: %s", context_name)
         raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
 
+    metadata = app.state.context_store.load_context(context_name)
     profile = UserProfile(experience_level="beginner")
     prompt = build_evaluation_prompt(
-        question=body.question, answer=body.answer, chunks=chunks, profile=profile
+        question=body.question,
+        answer=body.answer,
+        chunks=chunks,
+        profile=profile,
+        metadata=metadata,
     )
     result = await evaluate_answer(prompt, app.state.anthropic)
     return EvaluationResponse(**result.model_dump())
