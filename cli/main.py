@@ -186,6 +186,7 @@ def evaluate(
     store = ChunkStore(store_dir)
     embedder = SentenceTransformerEmbedder()
     retriever = Retriever(store=store, embedder=embedder)
+    metadata = ContextStore(store_dir).load_context(context)
     profile = UserProfile(experience_level=experience_level)
     chunks = [chunk for chunk, _ in retriever.retrieve(context, query, k)]
     prompt = build_evaluation_prompt(
@@ -193,6 +194,7 @@ def evaluate(
         answer=answer_text,
         chunks=chunks,
         profile=profile,
+        metadata=metadata,
     )
     result = asyncio.run(evaluate_answer(prompt, AsyncAnthropic()))
     print(f"Score: {result.score}/10")
@@ -257,6 +259,7 @@ def practice(
                 answer=answer,
                 chunks=chunks,
                 profile=profile,
+                metadata=metadata,
             )
             evaluation = await evaluate_answer(eval_prompt, client)
 
