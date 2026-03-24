@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -6,6 +7,8 @@ import yaml
 from numpy.typing import NDArray
 
 from core.models import ContextMetadata
+
+logger = logging.getLogger(__name__)
 
 
 class ContextStore:
@@ -25,8 +28,12 @@ class ContextStore:
         ctx_file = self.base_dir / context / "context.yaml"
         if not ctx_file.exists():
             return None
-        data = yaml.safe_load(ctx_file.read_text())
-        return ContextMetadata(**data)
+        try:
+            data = yaml.safe_load(ctx_file.read_text())
+            return ContextMetadata(**data)
+        except Exception as e:
+            logger.warning("could not parse context.yaml for %r: %s", context, e)
+            return None
 
 
 class ChunkStore:
