@@ -242,44 +242,6 @@ def test_record_annotation_unique_per_question_and_target_type(tmp_path: Path) -
     assert rows[0][0] == "Updated report"
 
 
-def test_chunks_score_migration(tmp_path: Path) -> None:
-    """Migration adds score column to existing chunks table that lacks it."""
-    ctx_dir = tmp_path / "ctx"
-    ctx_dir.mkdir()
-    db_path = ctx_dir / "sessions.db"
-
-    # Simulate a pre-migration DB: chunks table without score column
-    with sqlite3.connect(db_path) as conn:
-        conn.executescript(
-            "CREATE TABLE sessions"
-            " (session_id TEXT PRIMARY KEY, context TEXT NOT NULL, started_at TEXT NOT NULL);"
-            "CREATE TABLE attempts"
-            " (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,"
-            " question_id TEXT, question_text TEXT NOT NULL, answer_text TEXT NOT NULL,"
-            " score INTEGER NOT NULL, result_json TEXT, timestamp TEXT NOT NULL);"
-            "CREATE TABLE chunks"
-            " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            " attempt_id INTEGER NOT NULL, chunk_text TEXT NOT NULL);"
-            "INSERT INTO sessions VALUES ('s1', 'ctx', '2024-01-01T00:00:00+00:00');"
-            "INSERT INTO attempts"
-            " VALUES (1, 's1', NULL, 'Q?', 'A.', 5, NULL, '2024-01-01T00:00:00+00:00');"
-            "INSERT INTO chunks (attempt_id, chunk_text) VALUES (1, 'old chunk');"
-        )
-
-    # Opening SessionStore should run migration and add score column
-    store = SessionStore(tmp_path, "ctx")
-
-    # Migrated row has score = NULL
-    loaded = store.load_chunks(1)
-    assert loaded == [("old chunk", None)]
-
-    # New chunks can be stored with scores
-    session_id = store.start_session()
-    attempt_id = store.record(session_id, "Q2?", "A2.", 7)
-    store.record_chunks(attempt_id, [("new chunk", 0.85)])
-    assert store.load_chunks(attempt_id) == [("new chunk", 0.85)]
-
-
 def test_flag_annotation_sets_flagged_at(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
     store.start_session()
@@ -339,6 +301,64 @@ def test_load_annotations_filter_flagged(tmp_path: Path) -> None:
 
     all_annotations = store.load_annotations()
     assert len(all_annotations) == 2
+
+
+def test_migrations_apply_to_fresh_db(tmp_path: Path) -> None:
+    """SessionStore on a fresh DB creates all tables including alembic_version."""
+    SessionStore(tmp_path, "ctx")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        tables = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        }
+
+    assert {"sessions", "attempts", "chunks", "annotations", "alembic_version"} <= tables
+
+
+def test_migrations_stamp_existing_db_without_alembic_version(tmp_path: Path) -> None:
+    """Existing DB without alembic_version is stamped at head; data is preserved."""
+    ctx_dir = tmp_path / "ctx"
+    ctx_dir.mkdir()
+    db_path = ctx_dir / "sessions.db"
+
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            "CREATE TABLE sessions"
+            " (session_id TEXT PRIMARY KEY, context TEXT NOT NULL, started_at TEXT NOT NULL);"
+            "CREATE TABLE attempts"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,"
+            " question_id TEXT, question_text TEXT NOT NULL, answer_text TEXT NOT NULL,"
+            " score INTEGER NOT NULL, result_json TEXT, timestamp TEXT NOT NULL);"
+            "CREATE TABLE chunks"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            " attempt_id INTEGER NOT NULL REFERENCES attempts(id),"
+            " chunk_text TEXT NOT NULL, score REAL);"
+            "CREATE TABLE annotations"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, attempt_id INTEGER REFERENCES attempts(id),"
+            " question_id TEXT, target_type TEXT NOT NULL, sentiment TEXT NOT NULL,"
+            " comment TEXT, created_at TEXT NOT NULL, flagged_at TEXT,"
+            " UNIQUE(question_id, target_type));"
+            "INSERT INTO sessions VALUES ('s1', 'ctx', '2024-01-01T00:00:00+00:00');"
+            "INSERT INTO attempts"
+            " VALUES (1, 's1', 'qid-1', 'Q?', 'A.', 5, NULL, '2024-01-01T00:00:00+00:00');"
+        )
+
+    store = SessionStore(tmp_path, "ctx")
+
+    # Data preserved
+    sessions = store.load_sessions()
+    assert len(sessions) == 1
+    assert sessions[0].session_id == "s1"
+
+    # alembic_version table now exists
+    with sqlite3.connect(db_path) as conn:
+        tables = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        }
+    assert "alembic_version" in tables
 
 
 def test_load_annotations_flagged_and_sentiment_combined(tmp_path: Path) -> None:
