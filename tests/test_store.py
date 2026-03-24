@@ -40,6 +40,22 @@ def test_context_store_returns_none_when_missing(tmp_path: Path) -> None:
     assert store.load_context("does-not-exist") is None
 
 
+def test_context_store_returns_none_on_malformed_yaml(tmp_path: Path) -> None:
+    ctx_dir = tmp_path / "ctx"
+    ctx_dir.mkdir()
+    (ctx_dir / "context.yaml").write_text(": bad: yaml: [")
+    store = ContextStore(tmp_path)
+    assert store.load_context("ctx") is None
+
+
+def test_context_store_returns_none_on_wrong_shape(tmp_path: Path) -> None:
+    ctx_dir = tmp_path / "ctx"
+    ctx_dir.mkdir()
+    (ctx_dir / "context.yaml").write_text("unexpected_key: value\n")
+    store = ContextStore(tmp_path)
+    assert store.load_context("ctx") is None
+
+
 def test_store_and_load_round_trip(tmp_path: Path) -> None:
     store = ChunkStore(tmp_path)
     chunks = ["first chunk", "second chunk"]
