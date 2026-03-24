@@ -150,6 +150,29 @@ make prompt context=<name> query="<topic>"
 make prompt context=biology query="what is the role of mitochondria"
 ```
 
+## Database migrations
+
+Schema changes are managed with [Alembic](https://alembic.sqlalchemy.org/en/latest/).
+Migrations run automatically on startup — no manual step required.
+
+### Making a schema change
+
+1. Add a migration file under `alembic/versions/` — see the [Alembic tutorial](https://alembic.sqlalchemy.org/en/latest/tutorial.html) or copy `alembic/versions/001_baseline.py` as a starting point. Use `op.execute()` with raw SQL; no SQLAlchemy ORM needed.
+2. Set `down_revision` to the previous revision ID and pick a new `revision` ID.
+3. Write both `upgrade()` and `downgrade()`.
+
+### Rolling back a migration
+
+```bash
+uv run alembic -x sqlalchemy.url="sqlite:///contexts/store/<context>/sessions.db" downgrade -1
+```
+
+### Verifying the current revision
+
+```bash
+sqlite3 contexts/store/<context>/sessions.db "SELECT * FROM alembic_version;"
+```
+
 ## Running checks
 
 ```bash
