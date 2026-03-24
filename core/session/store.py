@@ -3,45 +3,12 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from alembic.config import Config
+
+from alembic import command
 from core.session.models import QuestionAttempt, SessionRecord
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS sessions (
-    session_id TEXT PRIMARY KEY,
-    context    TEXT NOT NULL,
-    started_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS attempts (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id    TEXT NOT NULL REFERENCES sessions(session_id),
-    question_id   TEXT,
-    question_text TEXT NOT NULL,
-    answer_text   TEXT NOT NULL,
-    score         INTEGER NOT NULL,
-    result_json   TEXT,
-    timestamp     TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS chunks (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    attempt_id INTEGER NOT NULL REFERENCES attempts(id),
-    chunk_text TEXT NOT NULL,
-    score      REAL
-);
-
-CREATE TABLE IF NOT EXISTS annotations (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    attempt_id  INTEGER REFERENCES attempts(id),
-    question_id TEXT,
-    target_type TEXT NOT NULL CHECK(target_type IN ('question', 'evaluation')),
-    sentiment   TEXT NOT NULL CHECK(sentiment IN ('up', 'down')),
-    comment     TEXT,
-    created_at  TEXT NOT NULL,
-    flagged_at  TEXT,
-    UNIQUE(question_id, target_type)  -- one per question; INSERT OR REPLACE means last write wins
-);
-"""
+_ALEMBIC_DIR = Path(__file__).resolve().parent.parent.parent / "alembic"
 
 
 class SessionStore:
@@ -53,61 +20,24 @@ class SessionStore:
         self._init_db()
 
     def _init_db(self) -> None:
-        with sqlite3.connect(self._db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.executescript(_SCHEMA)
-            self._migrate(conn)
+        cfg = Config()
+        cfg.set_main_option("script_location", str(_ALEMBIC_DIR))
+        cfg.set_main_option("sqlalchemy.url", f"sqlite:///{self._db_path}")
 
-    def _migrate(self, conn: sqlite3.Connection) -> None:
-        attempts_cols = {row[1] for row in conn.execute("PRAGMA table_info(attempts)").fetchall()}
-        if "question_id" not in attempts_cols:
-            conn.execute("ALTER TABLE attempts ADD COLUMN question_id TEXT")
-        if "result_json" not in attempts_cols:
-            conn.execute("ALTER TABLE attempts ADD COLUMN result_json TEXT")
-        tables = {
-            row[0]
-            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-        }
-        if "chunks" not in tables:
-            conn.execute(
-                "CREATE TABLE chunks ("
-                "    id         INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "    attempt_id INTEGER NOT NULL REFERENCES attempts(id),"
-                "    chunk_text TEXT NOT NULL,"
-                "    score      REAL"
-                ")"
-            )
-        chunks_cols = {row[1] for row in conn.execute("PRAGMA table_info(chunks)").fetchall()}
-        if "score" not in chunks_cols:
-            conn.execute("ALTER TABLE chunks ADD COLUMN score REAL")
-        annotations_cols = {
-            row[1] for row in conn.execute("PRAGMA table_info(annotations)").fetchall()
-        }
-        if "question_id" not in annotations_cols:
-            # Recreate annotations to change UNIQUE key from (attempt_id, target_type)
-            # to (question_id, target_type) and make attempt_id nullable.
-            # This drops existing annotation data — acceptable for dev, revisit before
-            # any production deployment with real annotation history.
-            conn.executescript(
-                "DROP TABLE annotations;"
-                "CREATE TABLE annotations ("
-                "    id          INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "    attempt_id  INTEGER REFERENCES attempts(id),"
-                "    question_id TEXT,"
-                "    target_type TEXT NOT NULL CHECK(target_type IN ('question', 'evaluation')),"
-                "    sentiment   TEXT NOT NULL CHECK(sentiment IN ('up', 'down')),"
-                "    comment     TEXT,"
-                "    created_at  TEXT NOT NULL,"
-                "    flagged_at  TEXT,"
-                "    UNIQUE(question_id, target_type)"
-                ");"
-            )
-        # Re-fetch after potential recreate above
-        annotations_cols = {
-            row[1] for row in conn.execute("PRAGMA table_info(annotations)").fetchall()
-        }
-        if "flagged_at" not in annotations_cols:
-            conn.execute("ALTER TABLE annotations ADD COLUMN flagged_at TEXT")
+        with sqlite3.connect(self._db_path) as conn:
+            tables = {
+                row[0]
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+
+        if tables and "alembic_version" not in tables:
+            # Existing DB previously managed by _migrate() — stamp as already at head
+            # so future migrations apply on top without re-running the baseline.
+            command.stamp(cfg, "head")
+
+        command.upgrade(cfg, "head")
 
     def start_session(self) -> str:
         """Create a new session and return its ID."""
