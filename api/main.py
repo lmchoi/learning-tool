@@ -17,12 +17,12 @@ from google import genai
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, Response
 
-from api.models import EvaluateRequest, EvaluationResponse
+from api.models import EvaluateRequest, EvaluationResponse, QuestionResponse
 from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.store import ChunkStore, ContextStore
-from core.models import Question, UserProfile
+from core.models import UserProfile
 from core.question.generate_gemini import generate_question_gemini
 from core.question.prompt import build_question_prompt
 from core.question.store import QuestionBankStore
@@ -423,7 +423,7 @@ async def health() -> dict[str, str]:
 
 
 @app.get("/contexts/{context_name}/question")
-async def get_question(context_name: str, query: str) -> Question:
+async def get_question(context_name: str, query: str) -> QuestionResponse:
     try:
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
         chunks = [chunk for chunk, _ in results]
@@ -434,7 +434,8 @@ async def get_question(context_name: str, query: str) -> Question:
     metadata = app.state.context_store.load_context(context_name)
     profile = UserProfile(experience_level="beginner")
     prompt = build_question_prompt(chunks, profile, metadata)
-    return await generate_question_gemini(prompt, app.state.gemini)
+    question = await generate_question_gemini(prompt, app.state.gemini)
+    return QuestionResponse(text=question.text, question_id=str(uuid.uuid4()))
 
 
 @app.post("/contexts/{context_name}/evaluate")

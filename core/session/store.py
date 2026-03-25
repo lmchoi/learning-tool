@@ -147,25 +147,29 @@ class SessionStore:
                 att.score,
                 att.result_json
             FROM annotations a
-            LEFT JOIN attempts att ON (
-                (a.question_id IS NOT NULL AND att.question_id = a.question_id)
-                OR (a.question_id IS NULL AND a.attempt_id IS NOT NULL AND att.id = a.attempt_id)
-            )
+            LEFT JOIN attempts att ON att.question_id = a.question_id
             {where}
             ORDER BY a.id DESC
         """
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(query, params).fetchall()
+
+            attempt_ids = [row["attempt_id"] for row in rows if row["attempt_id"] is not None]
+            chunks_by_attempt: dict[int, list[tuple[str, float | None]]] = {}
+            if attempt_ids:
+                placeholders = ",".join("?" * len(attempt_ids))
+                chunk_rows = conn.execute(
+                    f"SELECT attempt_id, chunk_text, score FROM chunks"
+                    f" WHERE attempt_id IN ({placeholders}) ORDER BY id",
+                    attempt_ids,
+                ).fetchall()
+                for c in chunk_rows:
+                    chunks_by_attempt.setdefault(c[0], []).append((c[1], c[2]))
+
             result = []
             for row in rows:
-                chunks: list[tuple[str, float | None]] = []
-                if row["attempt_id"] is not None:
-                    chunk_rows = conn.execute(
-                        "SELECT chunk_text, score FROM chunks WHERE attempt_id = ? ORDER BY id",
-                        (row["attempt_id"],),
-                    ).fetchall()
-                    chunks = [(c[0], c[1]) for c in chunk_rows]
+                aid = row["attempt_id"]
                 result.append(
                     {
                         "id": row["id"],
@@ -179,7 +183,7 @@ class SessionStore:
                         "answer_text": row["answer_text"],
                         "score": row["score"],
                         "result_json": row["result_json"],
-                        "chunks": chunks,
+                        "chunks": chunks_by_attempt.get(aid, []) if aid is not None else [],
                     }
                 )
             return result
