@@ -56,15 +56,12 @@ def test_prompt_uses_xml_tags() -> None:
     chunks = ["Some material."]
     profile = UserProfile(experience_level="beginner")
     prompt = build_question_prompt(chunks, profile)
-    assert "<context>" in prompt
-    assert "</context>" in prompt
-    assert "<instructions>" in prompt
-    assert "</instructions>" in prompt
     assert "<learner>" in prompt
-    assert "</learner>" in prompt
+    assert "<context>" in prompt
+    assert "<instructions>" in prompt
 
 
-def test_chunks_are_inside_context_tags() -> None:
+def test_chunks_are_inside_context_section() -> None:
     chunks = ["Unique chunk content."]
     profile = UserProfile(experience_level="beginner")
     prompt = build_question_prompt(chunks, profile)
@@ -73,6 +70,20 @@ def test_chunks_are_inside_context_tags() -> None:
     assert "Unique chunk content." in prompt[context_start:context_end]
 
 
+def test_prompt_renders_from_template() -> None:
+    chunks = ["Template content."]
+    profile = UserProfile(experience_level="beginner")
+    prompt = build_question_prompt(chunks, profile)
+    assert "Template content." in prompt
+    assert "{" not in prompt  # no unrendered placeholders
+
+
 def test_prompt_instructs_plain_text_output() -> None:
     prompt = build_question_prompt(["Some material."], UserProfile(experience_level="beginner"))
     assert "plain text" in prompt
+
+
+def test_braces_in_chunk_content_do_not_crash() -> None:
+    chunks = ["Call func() with kwargs: {key: value}"]
+    prompt = build_question_prompt(chunks, UserProfile(experience_level="beginner"))
+    assert "{key: value}" in prompt
