@@ -47,7 +47,7 @@ def test_prompt_contains_answer() -> None:
     assert "X is a unique answer string." in prompt
 
 
-def test_prompt_contains_chunks_in_context_tags() -> None:
+def test_prompt_contains_chunks_in_context_section() -> None:
     chunks = ["Chunk alpha.", "Chunk beta."]
     prompt = build_evaluation_prompt(
         question="Q?",
@@ -91,9 +91,32 @@ def test_prompt_uses_xml_tags() -> None:
         chunks=["Some context."],
         profile=UserProfile(experience_level="beginner"),
     )
-    assert "<context>" in prompt
-    assert "</context>" in prompt
-    assert "<instructions>" in prompt
-    assert "</instructions>" in prompt
     assert "<learner>" in prompt
-    assert "</learner>" in prompt
+    assert "<context>" in prompt
+    assert "<question>" in prompt
+    assert "<answer>" in prompt
+    assert "<instructions>" in prompt
+
+
+def test_prompt_renders_from_template() -> None:
+    prompt = build_evaluation_prompt(
+        question="What is X?",
+        answer="X is Y.",
+        chunks=["Some context."],
+        profile=UserProfile(experience_level="beginner"),
+    )
+    assert "What is X?" in prompt
+    assert "X is Y." in prompt
+    assert "{" not in prompt  # no unrendered placeholders
+
+
+def test_braces_in_content_do_not_crash() -> None:
+    prompt = build_evaluation_prompt(
+        question="What is {this}?",
+        answer="It is {that}.",
+        chunks=["Example: {key: value}"],
+        profile=UserProfile(experience_level="beginner"),
+    )
+    assert "{this}" in prompt
+    assert "{that}" in prompt
+    assert "{key: value}" in prompt
