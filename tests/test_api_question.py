@@ -33,7 +33,9 @@ def test_get_question_returns_200(client: TestClient, mock_retriever: MagicMock)
         response = client.get("/contexts/geography/question?query=capitals")
 
     assert response.status_code == 200
-    assert response.json() == {"text": "What is the capital of France?"}
+    body = response.json()
+    assert body["text"] == "What is the capital of France?"
+    assert isinstance(body["question_id"], str) and len(body["question_id"]) == 36  # UUID
 
 
 def test_get_question_returns_404_for_unknown_context(

@@ -1,6 +1,11 @@
 from pydantic import BaseModel, Field
 
 
+class QuestionResponse(BaseModel):
+    text: str
+    question_id: str
+
+
 class EvaluateRequest(BaseModel):
     query: str = Field(description="RAG retrieval query — used to find relevant context chunks")
     question: str
