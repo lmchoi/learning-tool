@@ -256,3 +256,46 @@ button.thumb-down:hover {
   background: var(--secondary);
   color: #ffffff;
 }
+
+/* --- History page --- */
+
+.history-link {
+  display: inline-block;
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 24px;
+}
+
+.history-link:hover {
+  color: var(--text);
+}
+
+.session-card {
+  border: 2px solid var(--secondary);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 32px;
+}
+
+.session-meta {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.attempt-card {
+  border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+.attempt-question {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.attempt-answer {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
