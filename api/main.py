@@ -189,6 +189,31 @@ async def post_evaluate_fragment(
     )
 
 
+@app.get("/ui/{context_name}/history", response_class=HTMLResponse, include_in_schema=False)
+async def get_history(request: Request, context_name: str) -> HTMLResponse:
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    raw_sessions = session_store.load_sessions()
+    sessions = []
+    for s in reversed(raw_sessions):
+        if not s.attempts:
+            continue
+        attempts = []
+        for a in s.attempts:
+            result = None
+            if a.result_json:
+                try:
+                    result = json.loads(a.result_json)
+                except json.JSONDecodeError:
+                    logger.warning("malformed result_json for attempt in session %s", s.session_id)
+            attempts.append({"attempt": a, "result": result})
+        sessions.append({"session": s, "attempts": attempts})
+    return templates.TemplateResponse(
+        request,
+        "history.html",
+        {"context_name": context_name, "sessions": sessions},
+    )
+
+
 @app.get("/annotate/form", response_class=HTMLResponse, include_in_schema=False)
 async def get_annotate_form(
     request: Request,
