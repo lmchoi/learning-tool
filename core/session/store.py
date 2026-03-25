@@ -227,7 +227,8 @@ class SessionStore:
             records = []
             for session_id, context, started_at in rows:
                 attempt_rows = conn.execute(
-                    "SELECT session_id, question_id, question_text, answer_text, score, timestamp"
+                    "SELECT session_id, question_id, question_text, answer_text,"
+                    " score, timestamp, result_json"
                     " FROM attempts WHERE session_id = ? ORDER BY id",
                     (session_id,),
                 ).fetchall()
@@ -239,6 +240,7 @@ class SessionStore:
                         answer_text=r[3],
                         score=r[4],
                         timestamp=r[5],
+                        result_json=r[6],
                     )
                     for r in attempt_rows
                 ]

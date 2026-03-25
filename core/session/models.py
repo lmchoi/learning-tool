@@ -9,6 +9,7 @@ class QuestionAttempt:
     score: int
     timestamp: str
     question_id: str | None = None
+    result_json: str | None = None
 
 
 @dataclass

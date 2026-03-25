@@ -33,6 +33,26 @@ def test_record_round_trip(tmp_path: Path) -> None:
     assert loaded.timestamp  # ISO 8601 string, just check it's set
 
 
+def test_load_sessions_includes_result_json(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q?", "A.", 8, result_json='{"score": 8}')
+
+    sessions = store.load_sessions()
+
+    assert sessions[0].attempts[0].result_json == '{"score": 8}'
+
+
+def test_load_sessions_result_json_none_when_not_stored(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q?", "A.", 8)
+
+    sessions = store.load_sessions()
+
+    assert sessions[0].attempts[0].result_json is None
+
+
 def test_multiple_attempts_ordered(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
     session_id = store.start_session()
