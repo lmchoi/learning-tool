@@ -92,7 +92,7 @@ def _get_bank_store(
     return cache[context]
 
 
-@app.get("/ui/{context_name}", response_class=HTMLResponse)
+@app.get("/ui/{context_name}", response_class=HTMLResponse, include_in_schema=False)
 async def get_ui(request: Request, context_name: str, query: str | None = None) -> HTMLResponse:
     if query is None:
         metadata = app.state.context_store.load_context(context_name)
@@ -113,7 +113,7 @@ async def get_ui(request: Request, context_name: str, query: str | None = None) 
     )
 
 
-@app.get("/ui/{context_name}/question", response_class=HTMLResponse)
+@app.get("/ui/{context_name}/question", response_class=HTMLResponse, include_in_schema=False)
 async def get_question_fragment(
     request: Request, context_name: str, query: str, session_id: str
 ) -> HTMLResponse:
@@ -142,7 +142,7 @@ async def get_question_fragment(
     )
 
 
-@app.post("/ui/{context_name}/evaluate", response_class=HTMLResponse)
+@app.post("/ui/{context_name}/evaluate", response_class=HTMLResponse, include_in_schema=False)
 async def post_evaluate_fragment(
     request: Request,
     context_name: str,
@@ -189,7 +189,7 @@ async def post_evaluate_fragment(
     )
 
 
-@app.get("/annotate/form", response_class=HTMLResponse)
+@app.get("/annotate/form", response_class=HTMLResponse, include_in_schema=False)
 async def get_annotate_form(
     request: Request,
     question_id: str,
@@ -206,7 +206,7 @@ async def get_annotate_form(
     )
 
 
-@app.post("/annotate", response_class=HTMLResponse)
+@app.post("/annotate", response_class=HTMLResponse, include_in_schema=False)
 async def post_annotate(
     request: Request,
     question_id: str = Form(...),
@@ -226,7 +226,7 @@ async def post_annotate(
     )
 
 
-@app.get("/report-evaluation/form", response_class=HTMLResponse)
+@app.get("/report-evaluation/form", response_class=HTMLResponse, include_in_schema=False)
 async def get_report_evaluation_form(
     request: Request,
     question_id: str,
@@ -239,7 +239,7 @@ async def get_report_evaluation_form(
     )
 
 
-@app.post("/report-evaluation", response_class=HTMLResponse)
+@app.post("/report-evaluation", response_class=HTMLResponse, include_in_schema=False)
 async def post_report_evaluation(
     request: Request,
     question_id: str = Form(...),
@@ -258,7 +258,7 @@ _VALID_TARGET_TYPES = {"question", "evaluation"}
 _VALID_SENTIMENTS = {"up", "down"}
 
 
-@app.get("/admin/annotations", response_class=HTMLResponse)
+@app.get("/admin/annotations", response_class=HTMLResponse, include_in_schema=False)
 async def get_admin_annotations(
     request: Request,
     context_name: str,
@@ -295,7 +295,11 @@ async def get_admin_annotations(
     )
 
 
-@app.post("/admin/annotations/{annotation_id}/escalate", response_class=HTMLResponse)
+@app.post(
+    "/admin/annotations/{annotation_id}/escalate",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
 async def post_escalate_annotation(
     request: Request,
     annotation_id: int,
@@ -348,7 +352,9 @@ async def post_escalate_annotation(
     )
 
 
-@app.post("/admin/annotations/{annotation_id}/flag", response_class=HTMLResponse)
+@app.post(
+    "/admin/annotations/{annotation_id}/flag", response_class=HTMLResponse, include_in_schema=False
+)
 async def post_flag_annotation(
     request: Request,
     annotation_id: int,
@@ -367,7 +373,7 @@ async def post_flag_annotation(
     )
 
 
-@app.get("/contexts/{context_name}/questions")
+@app.get("/contexts/{context_name}/questions", tags=["questions"])
 async def get_bank_question(
     context_name: str,
     pick: str | None = None,
@@ -389,7 +395,7 @@ async def get_bank_question(
     }
 
 
-@app.get("/ui/{context_name}/question/bank", response_class=HTMLResponse)
+@app.get("/ui/{context_name}/question/bank", response_class=HTMLResponse, include_in_schema=False)
 async def get_bank_question_fragment(
     request: Request,
     context_name: str,
@@ -422,7 +428,7 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/contexts/{context_name}/question")
+@app.get("/contexts/{context_name}/question", tags=["questions"])
 async def get_question(context_name: str, query: str) -> QuestionResponse:
     try:
         results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
@@ -438,7 +444,7 @@ async def get_question(context_name: str, query: str) -> QuestionResponse:
     return QuestionResponse(text=question.text, question_id=str(uuid.uuid4()))
 
 
-@app.post("/contexts/{context_name}/evaluate")
+@app.post("/contexts/{context_name}/evaluate", tags=["evaluation"])
 async def post_evaluate(context_name: str, body: EvaluateRequest) -> EvaluationResponse:
     try:
         results = await asyncio.to_thread(
