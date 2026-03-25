@@ -221,34 +221,35 @@ class SessionStore:
 
     def load_sessions(self) -> list[SessionRecord]:
         with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 "SELECT session_id, context, started_at FROM sessions ORDER BY started_at"
             ).fetchall()
             records = []
-            for session_id, context, started_at in rows:
+            for row in rows:
                 attempt_rows = conn.execute(
                     "SELECT session_id, question_id, question_text, answer_text,"
                     " score, timestamp, result_json"
                     " FROM attempts WHERE session_id = ? ORDER BY id",
-                    (session_id,),
+                    (row["session_id"],),
                 ).fetchall()
                 attempts = [
                     QuestionAttempt(
-                        session_id=r[0],
-                        question_id=r[1],
-                        question_text=r[2],
-                        answer_text=r[3],
-                        score=r[4],
-                        timestamp=r[5],
-                        result_json=r[6],
+                        session_id=r["session_id"],
+                        question_id=r["question_id"],
+                        question_text=r["question_text"],
+                        answer_text=r["answer_text"],
+                        score=r["score"],
+                        timestamp=r["timestamp"],
+                        result_json=r["result_json"],
                     )
                     for r in attempt_rows
                 ]
                 records.append(
                     SessionRecord(
-                        session_id=session_id,
-                        context=context,
-                        started_at=started_at,
+                        session_id=row["session_id"],
+                        context=row["context"],
+                        started_at=row["started_at"],
                         attempts=attempts,
                     )
                 )
