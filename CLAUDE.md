@@ -71,7 +71,8 @@ Issues are organised into milestones. When creating a new issue, assign it to th
 
 | Milestone | What belongs there |
 |---|---|
-| **Learning Loop** | Session tracking, question bank, preset/user-entered questions, weak area surfacing — anything that makes the tool adapt to the learner over time |
+| **Learner Progress** | Session history, weak area surfacing, multi-learner support — anything tracking how the learner improves over time |
+| **Question Generation** | Question generation, retrieval strategy, question bank, Socratic follow-up, user-entered questions |
 | **Observability** | LLM call logging, Langfuse integration, annotation and feedback collection on questions/evaluations |
 | **Model Control** | Provider abstraction, per-task model defaults, model visibility in UI, user-selectable models |
 | **Deployment** | Railway deploy, HTTP ingest endpoint, README/docs needed before going live |
