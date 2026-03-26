@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ context_name }} — setup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <h1>{{ context_name }}</h1>
+    <p class="muted">Copy the prompt below into a chat, fill in your goal, and paste the response on the right.</p>
+    <div class="setup-panels">
+      <div class="setup-panel">
+        <h2>1. Copy this prompt</h2>
+        <pre class="prompt-block" id="prompt-block">{{ prompt_text }}</pre>
+        <button type="button" class="next" id="copy-btn" onclick="
+          navigator.clipboard.writeText(document.getElementById('prompt-block').innerText).then(function() {
+            var btn = document.getElementById('copy-btn');
+            btn.textContent = 'copied!';
+            setTimeout(function() { btn.textContent = 'copy prompt'; }, 2000);
+          });
+        ">copy prompt</button>
+      </div>
+      <div class="setup-panel">
+        <h2>2. Paste the AI response</h2>
+        <form method="post" action="/ui/{{ context_name | urlencode }}/import">
+          <textarea name="chat_response" rows="20" placeholder="Paste the AI response here…" required></textarea>
+          <button type="submit" class="submit">Import</button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

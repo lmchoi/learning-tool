@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
+import yaml
 from anthropic import AsyncAnthropic
 from fastapi import FastAPI, Form, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -17,12 +18,14 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, Response
 
 from api.models import EvaluateRequest, EvaluationResponse, QuestionResponse
+from core.context_import.parser import parse_import
 from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.store import ChunkStore, ContextStore
-from core.models import UserProfile
+from core.models import ContextMetadata, UserProfile
 from core.question.generate_gemini import generate_question_gemini
+from core.question.loader import load_questions
 from core.question.prompt import build_question_prompt
 from core.question.store import QuestionBankStore
 from core.rag.retriever import Retriever
@@ -32,6 +35,17 @@ from core.settings import GITHUB_REPO, GITHUB_TOKEN, LOG_LEVEL, STORE_DIR
 logger = logging.getLogger(__name__)
 
 _GITHUB_CONFIGURED = bool(GITHUB_TOKEN and GITHUB_REPO)
+_IMPORT_PROMPT: str | None = None
+_IMPORT_PROMPT_PATH = (
+    Path(__file__).parent.parent / "core" / "context_import" / "context_import_prompt.md"
+)
+
+
+def _get_import_prompt() -> str:
+    global _IMPORT_PROMPT
+    if _IMPORT_PROMPT is None:
+        _IMPORT_PROMPT = _IMPORT_PROMPT_PATH.read_text()
+    return _IMPORT_PROMPT
 
 
 @asynccontextmanager
@@ -109,6 +123,56 @@ async def get_ui(request: Request, context_name: str, query: str | None = None) 
         request,
         "practice.html",
         {"context_name": context_name, "query": query, "session_id": session_id},
+    )
+
+
+@app.get("/ui/{context_name}/setup", response_class=HTMLResponse, include_in_schema=False)
+async def get_setup(request: Request, context_name: str) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "setup.html",
+        {"context_name": context_name, "prompt_text": _get_import_prompt()},
+    )
+
+
+@app.post("/ui/{context_name}/import", response_class=HTMLResponse, include_in_schema=False)
+async def post_import(
+    request: Request,
+    context_name: str,
+    chat_response: str = Form(...),
+) -> HTMLResponse:
+    try:
+        imported = parse_import(chat_response)
+    except ValueError as e:
+        logger.warning("422 import parse error for context=%s: %s", context_name, e)
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    metadata = ContextMetadata(goal=imported.goal, focus_areas=imported.focus_areas)
+    await asyncio.to_thread(app.state.context_store.save_context, context_name, metadata)
+
+    questions_data = [{"focus_area": fa, "questions": qs} for fa, qs in imported.questions]
+    questions_yaml = yaml.dump(questions_data, default_flow_style=False, allow_unicode=True)
+    questions_path: Path = app.state.store_dir / context_name / "questions.yaml"
+    await asyncio.to_thread(questions_path.write_text, questions_yaml)
+
+    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
+    added = await asyncio.to_thread(bank_store.add, load_questions(questions_path))
+    logger.info(
+        "import complete: context=%s focus_areas=%d questions_added=%d",
+        context_name,
+        len(imported.focus_areas),
+        added,
+    )
+
+    context_yaml = yaml.dump(metadata.model_dump(), default_flow_style=False, allow_unicode=True)
+    return templates.TemplateResponse(
+        request,
+        "import_result.html",
+        {
+            "context_name": context_name,
+            "context_yaml": context_yaml,
+            "questions_yaml": questions_yaml,
+        },
     )
 
 

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ context_name }} — imported</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <h1>{{ context_name }}</h1>
+    <p>Context imported. Files written:</p>
+    <p class="section-heading">context.yaml</p>
+    <pre class="yaml-block">{{ context_yaml }}</pre>
+    <p class="section-heading">questions.yaml</p>
+    <pre class="yaml-block">{{ questions_yaml }}</pre>
+    <a href="/ui/{{ context_name | urlencode }}">start practising</a>
+    <a class="history-link" href="/ui/{{ context_name | urlencode }}/setup">← redo import</a>
+  </body>
+</html>

@@ -257,6 +257,48 @@ button.thumb-down:hover {
   color: #ffffff;
 }
 
+/* --- Setup page --- */
+
+.setup-panels {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.setup-panel {
+  flex: 1;
+  min-width: 0;
+}
+
+.setup-panel h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--secondary);
+  margin: 0 0 12px;
+}
+
+pre.prompt-block,
+pre.yaml-block {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 2px solid var(--secondary);
+  border-radius: 4px;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: color-mix(in srgb, var(--secondary) 5%, transparent);
+}
+
+pre.prompt-block {
+  margin: 0 0 8px;
+}
+
+pre.yaml-block {
+  margin: 0 0 16px;
+  background: color-mix(in srgb, var(--secondary) 5%, transparent);
+}
+
 /* --- History page --- */
 
 .history-link {
