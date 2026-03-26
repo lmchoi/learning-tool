@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import time
-import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -128,14 +127,13 @@ async def get_question_fragment(
     profile = UserProfile(experience_level="beginner")
     prompt = build_question_prompt(chunks, profile, metadata)
     question = await generate_question_gemini(prompt, app.state.gemini)
-    question_id = str(uuid.uuid4())
     return templates.TemplateResponse(
         request,
         "question.html",
         {
             "context_name": context_name,
             "question": question.text,
-            "question_id": question_id,
+            "question_id": question.question_id,
             "query": query,
             "session_id": session_id,
         },
@@ -466,7 +464,7 @@ async def get_question(context_name: str, query: str) -> QuestionResponse:
     profile = UserProfile(experience_level="beginner")
     prompt = build_question_prompt(chunks, profile, metadata)
     question = await generate_question_gemini(prompt, app.state.gemini)
-    return QuestionResponse(text=question.text, question_id=str(uuid.uuid4()))
+    return QuestionResponse(text=question.text, question_id=question.question_id)
 
 
 @app.post("/contexts/{context_name}/evaluate", tags=["evaluation"])
