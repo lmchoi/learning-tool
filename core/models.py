@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -17,6 +18,7 @@ class ContextMetadata(BaseModel):
 
 class Question(BaseModel):
     text: str
+    question_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
 
 
 class EvaluationResult(BaseModel):
