@@ -20,7 +20,7 @@ is config. Generate questions, evaluate answers, ask follow-ups.
 - FastAPI + HTMX for web
 - RAG with numpy first, ChromaDB later — chunk, embed, cosine similarity (see docs/decisions/002)
 - Faster-Whisper for local STT
-- Claude API for question generation, evaluation, Socratic mode
+- Claude API for question generation and evaluation (server-side fallback; primary path moves generation/evaluation to the user's own LLM chat via MCP)
 - Railway for deployment
 
 ## Engineering Principles
@@ -75,7 +75,9 @@ Issues are organised into milestones. When creating a new issue, assign it to th
 | **Question Generation** | Question generation, retrieval strategy, question bank, Socratic follow-up, user-entered questions |
 | **Observability** | LLM call logging, Langfuse integration, annotation and feedback collection on questions/evaluations |
 | **Model Control** | Provider abstraction, per-task model defaults, model visibility in UI, user-selectable models |
-| **Deployment** | Railway deploy, HTTP ingest endpoint, README/docs needed before going live |
+| **Ingestion** | Ingestion pipeline, source management, chunking, embedding |
+| **Chat Integration** | Import context from AI chat sessions and export practice results back |
+| **In-chat Practice** | MCP server and channel-agnostic adapter layer — practice loop runs in Claude Desktop, tool handles storage and progress |
 
 Issues that don't fit a milestone (housekeeping, bug fixes, warnings) can be left unassigned.
 
@@ -89,4 +91,4 @@ ln -s $(pwd)/.claude/memory ~/.claude/projects/$(pwd | sed 's|/|-|g' | sed 's|^-
 
 ## What to Read First
 
-Read `something.md` for full project brief, architecture, data models, and build order.
+Read `docs/design/` for current design thinking and architectural decisions.
