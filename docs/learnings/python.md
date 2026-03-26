@@ -95,3 +95,30 @@ and evaluates in one step, avoiding the double call:
 The assignment `s := chunk.strip()` evaluates to the stripped string. An empty string
 is falsy, so whitespace-only items are filtered out, and `s` in the output expression
 reuses the already-computed value.
+
+---
+
+## str.format_map() is single-pass — substituted values are never re-evaluated
+
+`str.format_map(values)` scans the template once, replaces each `{placeholder}` with
+the corresponding value from the dict, and returns the result. It never looks at the
+substituted values again.
+
+```python
+template = "Hello {name}, your input was: {material}"
+material = "Call func with {key: value}"  # contains braces
+
+result = template.format_map({"name": "Alice", "material": material})
+# → "Hello Alice, your input was: Call func with {key: value}"
+# The {key: value} in `material` is NOT interpreted as a placeholder.
+```
+
+This means passing user-controlled content (e.g. RAG chunks, user goals) as values is
+safe — Python never does a second pass over what was substituted.
+
+The only real failure mode is a `{placeholder}` in the **template itself** that isn't
+in the dict — a developer error (typo or missing key), caught immediately at test time.
+
+Contrast with recursive template engines (e.g. PHP double-evaluation) where the output
+of one substitution becomes input to another pass. Python's `str.format_map` is not
+that — it's closer to a named find-and-replace over a fixed set of slots.
