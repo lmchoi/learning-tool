@@ -78,6 +78,32 @@ Run slow tests explicitly: `uv run pytest -m slow`
 
 ---
 
+## Async event loop and `asyncio.to_thread`
+
+FastAPI runs on an async event loop. `async def` handlers yield control when they
+`await` — letting other requests run while waiting. But ordinary synchronous functions
+(file writes, DB calls, anything without `await`) block the thread entirely until
+they return. No other requests can be handled during that time.
+
+`asyncio.to_thread` offloads a sync function to a thread pool, freeing the event loop:
+
+```python
+# blocks the event loop — no other requests run while this writes
+app.state.context_store.save_context(context_name, metadata)
+
+# doesn't block — runs in a thread pool, event loop stays free
+await asyncio.to_thread(app.state.context_store.save_context, context_name, metadata)
+```
+
+The function and its arguments are passed separately to `to_thread` — it calls
+`func(*args)` in the thread.
+
+For low-traffic local tools this rarely causes real problems (file writes are fast),
+but it matters for correctness under load and is required by this project's
+"async throughout" architecture rule.
+
+---
+
 ## Walrus operator (:=) to avoid calling a function twice
 
 When filtering and transforming in a list comprehension, you sometimes call the same
