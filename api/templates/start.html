@@ -21,5 +21,6 @@
     <p class="muted">No focus areas configured for this context.</p>
     {% endif %}
     <a class="history-link" href="/ui/{{ context_name | urlencode }}/history">view history</a>
+    <a class="muted" href="/admin/annotations?context_name={{ context_name | urlencode }}">annotations</a>
   </body>
 </html>
