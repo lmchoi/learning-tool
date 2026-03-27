@@ -354,6 +354,11 @@ _VALID_TARGET_TYPES = {"question", "evaluation"}
 _VALID_SENTIMENTS = {"up", "down"}
 
 
+@app.get("/admin", response_class=HTMLResponse, include_in_schema=False)
+async def get_admin_index(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "admin_index.html")
+
+
 @app.get("/admin/annotations", response_class=HTMLResponse, include_in_schema=False)
 async def get_admin_annotations(
     request: Request,
