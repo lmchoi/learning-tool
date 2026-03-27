@@ -242,6 +242,12 @@ def test_post_evaluate_fragment_returns_404_for_unknown_context(
     assert "unknown" in response.json()["detail"]
 
 
+def test_practice_page_includes_history_link(client: TestClient) -> None:
+    response = client.get("/ui/my-context?query=topic")
+
+    assert "/ui/my-context/history" in response.text
+
+
 def test_get_session_store_creates_instance_on_first_call(tmp_path: Path) -> None:
     cache: dict[str, SessionStore] = {}
 
