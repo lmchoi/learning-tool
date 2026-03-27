@@ -105,6 +105,15 @@ def _get_bank_store(
     return cache[context]
 
 
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def get_index(request: Request) -> HTMLResponse:
+    store_dir: Path = request.app.state.store_dir
+    contexts = (
+        sorted(p.name for p in store_dir.iterdir() if p.is_dir()) if store_dir.exists() else []
+    )
+    return templates.TemplateResponse(request, "index.html", {"contexts": contexts})
+
+
 @app.get("/ui/{context_name}", response_class=HTMLResponse, include_in_schema=False)
 async def get_ui(request: Request, context_name: str, query: str | None = None) -> HTMLResponse:
     if query is None:
