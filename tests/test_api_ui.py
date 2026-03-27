@@ -242,6 +242,15 @@ def test_post_evaluate_fragment_returns_404_for_unknown_context(
     assert "unknown" in response.json()["detail"]
 
 
+def test_start_page_includes_annotations_link(client: TestClient) -> None:
+    app.state.context_store = MagicMock()
+    app.state.context_store.load_context.return_value = METADATA
+
+    response = client.get("/ui/my-context")
+
+    assert "/admin/annotations?context_name=my-context" in response.text
+
+
 def test_practice_page_includes_history_link(client: TestClient) -> None:
     response = client.get("/ui/my-context?query=topic")
 
