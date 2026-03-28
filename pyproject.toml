@@ -46,6 +46,14 @@ addopts = "--import-mode=importlib -m 'not slow'"
 pythonpath = ["."]
 markers = ["slow: requires real model, run with -m slow"]
 
+[tool.coverage.run]
+branch = true
+source = ["adapters", "api", "cli", "core"]
+omit = ["*/tests/*", "*/migrations/*"]
+
+[tool.coverage.report]
+show_missing = true
+
 [tool.mypy]
 python_version = "3.13"
 strict = true
@@ -58,6 +66,7 @@ dev = [
     "pre-commit>=3.8.0",
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
+    "pytest-cov>=7.1.0",
     "ruff>=0.7.0",
     "types-pyyaml>=6.0.12.20250915",
 ]

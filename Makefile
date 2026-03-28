@@ -2,7 +2,7 @@ ENV_FILE ?= $(HOME)/.secrets/.env
 -include $(ENV_FILE)
 export
 
-.PHONY: init ingest load-questions prompt question evaluate practice serve checks test help
+.PHONY: init ingest load-questions prompt question evaluate practice serve checks test coverage help
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -39,3 +39,6 @@ checks:  ## Run ruff, mypy, and pytest
 
 test:  ## Run tests only
 	uv run pytest
+
+coverage:  ## Run tests with coverage report
+	uv run pytest --cov --cov-report=term-missing
