@@ -22,7 +22,7 @@ dependencies = [
 package = true
 
 [tool.setuptools.packages.find]
-include = ["api*", "cli*", "core*"]
+include = ["adapters*", "api*", "cli*", "core*"]
 
 [project.scripts]
 learn = "cli.main:app"
