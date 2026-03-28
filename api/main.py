@@ -157,10 +157,51 @@ async def post_import(
         logger.warning("422 import parse error for context=%s: %s", context_name, e)
         raise HTTPException(status_code=422, detail=str(e)) from e
 
-    metadata = ContextMetadata(goal=imported.goal, focus_areas=imported.focus_areas)
+    logger.info(
+        "import parsed: context=%s focus_areas=%d",
+        context_name,
+        len(imported.focus_areas),
+    )
+    return templates.TemplateResponse(
+        request,
+        "import_review.html",
+        {
+            "context_name": context_name,
+            "goal": imported.goal,
+            "focus_areas_questions": imported.questions,
+        },
+    )
+
+
+@app.post("/ui/{context_name}/confirm", response_class=HTMLResponse, include_in_schema=False)
+async def post_confirm(
+    request: Request,
+    context_name: str,
+) -> HTMLResponse:
+    form = await request.form()
+    goal = str(form.get("goal", ""))
+    focus_areas = [str(v) for v in form.getlist("focus_area")]
+
+    if not goal:
+        raise HTTPException(status_code=422, detail="goal is required")
+
+    questions_by_area: list[tuple[str, list[str]]] = []
+    for fa in focus_areas:
+        raw_qs = [str(v) for v in form.getlist(f"question_{fa}")]
+        qs = [q.strip() for q in raw_qs if q.strip()]
+        if qs:
+            questions_by_area.append((fa, qs))
+
+    if not questions_by_area:
+        raise HTTPException(status_code=422, detail="at least one question is required")
+
+    metadata = ContextMetadata(
+        goal=goal,
+        focus_areas=[fa for fa, _ in questions_by_area],
+    )
     await asyncio.to_thread(app.state.context_store.save_context, context_name, metadata)
 
-    questions_data = [{"focus_area": fa, "questions": qs} for fa, qs in imported.questions]
+    questions_data = [{"focus_area": fa, "questions": qs} for fa, qs in questions_by_area]
     questions_yaml = yaml.dump(questions_data, default_flow_style=False, allow_unicode=True)
     questions_path: Path = app.state.store_dir / context_name / "questions.yaml"
     await asyncio.to_thread(questions_path.write_text, questions_yaml)
@@ -168,9 +209,9 @@ async def post_import(
     bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
     added = await asyncio.to_thread(bank_store.add, load_questions(questions_path))
     logger.info(
-        "import complete: context=%s focus_areas=%d questions_added=%d",
+        "confirm complete: context=%s focus_areas=%d questions_added=%d",
         context_name,
-        len(imported.focus_areas),
+        len(questions_by_area),
         added,
     )
 

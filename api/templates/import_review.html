@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ context_name }} — review import</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+      .question-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+      .question-input { flex: 1; }
+    </style>
+  </head>
+  <body>
+    <h1>{{ context_name }}</h1>
+    <p class="muted">Review and edit questions before importing. Remove any that are off-target.</p>
+
+    <form method="post" action="/ui/{{ context_name | urlencode }}/confirm" id="review-form">
+      <input type="hidden" name="goal" value="{{ goal }}" />
+
+      {% for focus_area, questions in focus_areas_questions %}
+      <div class="review-section" id="section-{{ loop.index }}">
+        <p class="section-heading">{{ focus_area }}</p>
+        <input type="hidden" name="focus_area" value="{{ focus_area }}" />
+        <div class="question-list" id="questions-{{ loop.index }}">
+          {% for q in questions %}
+          <div class="question-row">
+            <input type="text" name="question_{{ focus_area }}" value="{{ q }}" class="question-input" />
+            <button type="button" class="remove-btn" onclick="removeQuestion(this)">remove</button>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="add-btn" onclick='addQuestion(this, {{ focus_area | tojson }})'>+ add question</button>
+      </div>
+      {% endfor %}
+
+      <div class="review-actions">
+        <button type="submit" class="submit">Confirm import</button>
+        <a class="history-link" href="/ui/{{ context_name | urlencode }}/setup">← back to setup</a>
+      </div>
+    </form>
+
+    <script>
+      function removeQuestion(btn) {
+        btn.closest('.question-row').remove();
+      }
+
+      function addQuestion(btn, focusArea) {
+        var list = btn.previousElementSibling;
+        var row = document.createElement('div');
+        row.className = 'question-row';
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'question_' + focusArea;
+        input.className = 'question-input';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'remove-btn';
+        btn.textContent = 'remove';
+        btn.onclick = function() { removeQuestion(this); };
+        row.appendChild(input);
+        row.appendChild(btn);
+        list.appendChild(row);
+        row.querySelector('input').focus();
+      }
+    </script>
+  </body>
+</html>
