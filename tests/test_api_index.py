@@ -1,5 +1,7 @@
 from collections.abc import Generator
+from contextlib import ExitStack
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,22 +9,33 @@ from fastapi.testclient import TestClient
 from api.main import app
 
 
+def _make_client(store_dir: Path) -> Generator[TestClient]:
+    with ExitStack() as stack:
+        stack.enter_context(patch("api.main.SentenceTransformerEmbedder"))
+        stack.enter_context(patch("api.main.AsyncAnthropic"))
+        stack.enter_context(patch("api.main.genai"))
+        stack.enter_context(patch("api.main.SessionStore"))
+        stack.enter_context(patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}))
+        c = stack.enter_context(TestClient(app))
+        c.app.state.store_dir = store_dir  # type: ignore[attr-defined]
+        yield c
+
+
 @pytest.fixture()
 def client(tmp_path: Path) -> Generator[TestClient]:
     (tmp_path / "python").mkdir()
     (tmp_path / "sql").mkdir()
-    from unittest.mock import patch
+    yield from _make_client(tmp_path)
 
-    with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.SessionStore"),
-        patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
-        TestClient(app) as c,
-    ):
-        c.app.state.store_dir = tmp_path  # type: ignore[attr-defined]
-        yield c
+
+@pytest.fixture()
+def empty_store_client(tmp_path: Path) -> Generator[TestClient]:
+    yield from _make_client(tmp_path)
+
+
+@pytest.fixture()
+def missing_store_client(tmp_path: Path) -> Generator[TestClient]:
+    yield from _make_client(tmp_path / "nonexistent")
 
 
 def test_get_index_returns_200(client: TestClient) -> None:
@@ -42,22 +55,18 @@ def test_get_index_lists_context_links(client: TestClient) -> None:
 def test_get_index_links_to_admin(client: TestClient) -> None:
     response = client.get("/")
 
-    assert "/admin" in response.text
+    assert 'href="/admin"' in response.text
 
 
-def test_get_index_empty_store_shows_no_contexts(tmp_path: Path) -> None:
-    from unittest.mock import patch
+def test_get_index_empty_store_shows_no_contexts(empty_store_client: TestClient) -> None:
+    response = empty_store_client.get("/")
 
-    with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.SessionStore"),
-        patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
-        TestClient(app) as c,
-    ):
-        c.app.state.store_dir = tmp_path  # type: ignore[attr-defined]
-        response = c.get("/")
+    assert response.status_code == 200
+    assert "/ui/" not in response.text
+
+
+def test_get_index_missing_store_dir_shows_no_contexts(missing_store_client: TestClient) -> None:
+    response = missing_store_client.get("/")
 
     assert response.status_code == 200
     assert "/ui/" not in response.text
