@@ -150,6 +150,47 @@ make prompt context=<name> query="<topic>"
 make prompt context=biology query="what is the role of mitochondria"
 ```
 
+## Claude Desktop MCP setup
+
+The MCP server lets Claude Desktop call the learning tool during a practice session.
+It runs locally via stdio and communicates with the FastAPI app.
+
+### Prerequisites
+
+- Dependencies installed (`uv sync`)
+- The FastAPI app must be running (`uv run uvicorn api.main:app`)
+- Claude Desktop installed
+
+### One-time setup
+
+Add the following entry to Claude Desktop's `claude_desktop_config.json`:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "learning-tool": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/absolute/path/to/learning-tool",
+        "python",
+        "adapters/mcp/server.py"
+      ]
+    }
+  }
+}
+```
+
+Replace `/absolute/path/to/learning-tool` with the absolute path to this repo on your machine.
+
+Restart Claude Desktop after saving the config. The server starts automatically
+when Claude Desktop launches.
+
 ## Database migrations
 
 Schema changes are managed with [Alembic](https://alembic.sqlalchemy.org/en/latest/).
