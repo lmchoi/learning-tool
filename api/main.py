@@ -15,10 +15,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from google import genai
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, Response
+from starlette.responses import HTMLResponse, RedirectResponse, Response
 
 from api.models import EvaluateRequest, EvaluationResponse, QuestionResponse
 from core.context_import.parser import parse_import
+from core.context_name import validate_context_name
 from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
@@ -362,6 +363,25 @@ async def get_admin_index(request: Request) -> HTMLResponse:
 @app.get("/admin/contexts", response_class=HTMLResponse, include_in_schema=False)
 async def get_admin_contexts(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "admin_contexts.html", {"error": None})
+
+
+@app.post(
+    "/admin/contexts", response_class=HTMLResponse, response_model=None, include_in_schema=False
+)
+async def post_admin_contexts(
+    request: Request,
+    name: str = Form(...),
+) -> HTMLResponse | RedirectResponse:
+    try:
+        validate_context_name(name)
+    except ValueError as e:
+        return templates.TemplateResponse(
+            request,
+            "admin_contexts.html",
+            {"error": str(e)},
+            status_code=400,
+        )
+    return RedirectResponse(url=f"/ui/{name}/setup", status_code=303)
 
 
 @app.get("/admin/annotations", response_class=HTMLResponse, include_in_schema=False)

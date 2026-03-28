@@ -34,3 +34,20 @@ def test_get_admin_contexts_renders_form(client: TestClient) -> None:
 
     assert "<form" in response.text
     assert 'name="name"' in response.text
+
+
+def test_post_admin_contexts_valid_name_redirects(client: TestClient) -> None:
+    response = client.post(
+        "/admin/contexts", data={"name": "python-asyncio"}, follow_redirects=False
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/ui/python-asyncio/setup"
+
+
+def test_post_admin_contexts_invalid_name_returns_400(client: TestClient) -> None:
+    response = client.post("/admin/contexts", data={"name": "abc"})
+
+    assert response.status_code == 400
+    assert "text/html" in response.headers["content-type"]
+    assert "at least 4" in response.text
