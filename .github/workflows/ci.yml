@@ -41,10 +41,13 @@ jobs:
         run: uv run pytest --cov --cov-report=xml || [ $? -eq 5 ]
 
       - name: Coverage summary
-        run: echo "## Coverage" >> $GITHUB_STEP_SUMMARY && uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+        if: always()
+        run: |
+          echo "## Coverage" >> $GITHUB_STEP_SUMMARY
+          uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
       - name: Coverage comment
-        if: github.event_name == 'pull_request'
-        uses: MishaKav/pytest-coverage-comment@main
+        if: always() && github.event_name == 'pull_request'
+        uses: MishaKav/pytest-coverage-comment@287292879eaaff04116f36d3eb1a670f6e5df1a4  # v1.7.1
         with:
           pytest-xml-coverage-path: coverage.xml
