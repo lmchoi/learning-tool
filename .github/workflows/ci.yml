@@ -36,4 +36,7 @@ jobs:
         run: uv run mypy .
 
       - name: Pytest
-        run: uv run pytest || [ $? -eq 5 ]
+        run: uv run pytest --cov --cov-report=xml || [ $? -eq 5 ]
+
+      - name: Coverage summary
+        run: echo "## Coverage" >> $GITHUB_STEP_SUMMARY && uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
