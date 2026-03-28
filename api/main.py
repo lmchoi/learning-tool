@@ -359,6 +359,11 @@ async def get_admin_index(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "admin_index.html")
 
 
+@app.get("/admin/contexts", response_class=HTMLResponse, include_in_schema=False)
+async def get_admin_contexts(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "admin_contexts.html", {"error": None})
+
+
 @app.get("/admin/annotations", response_class=HTMLResponse, include_in_schema=False)
 async def get_admin_annotations(
     request: Request,
