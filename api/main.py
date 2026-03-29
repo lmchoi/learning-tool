@@ -756,7 +756,10 @@ async def post_attempt(body: AttemptRequest) -> dict[str, int]:
 
 @app.get("/api/questions/{context}", tags=["questions"])
 async def get_api_question(context: str, focus_area: str | None = None) -> dict[str, str]:
-    validate_context_name(context)
+    try:
+        validate_context_name(context)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     if not (app.state.store_dir / context).exists():
         logger.warning("404 context not found: %s", context)
         raise HTTPException(status_code=404, detail=f"Context '{context}' not found")
