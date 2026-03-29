@@ -95,6 +95,36 @@ def test_record_stores_question_id(tmp_path: Path) -> None:
     assert sessions[0].attempts[0].question_id == "test-qid"
 
 
+def test_update_attempt_result(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q?", "A.", 0, question_id="qid-1")
+
+    # Initial state
+    sessions = store.load_sessions()
+    aid = sessions[0].attempts[0].attempt_id
+    assert aid is not None
+    assert sessions[0].attempts[0].score == 0
+    assert sessions[0].attempts[0].result_json is None
+
+    # Update
+    updated = store.update_attempt_result(aid, 8, result_json='{"score": 8}')
+    assert updated is True
+
+    # Final state
+    sessions = store.load_sessions()
+    assert sessions[0].attempts[0].score == 8
+    assert sessions[0].attempts[0].result_json == '{"score": 8}'
+
+
+def test_update_attempt_result_not_found(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path, "ctx")
+    store.start_session()
+
+    # Update with wrong attempt_id
+    assert store.update_attempt_result(9999, 8) is False
+
+
 def test_record_annotation_sentiment_only(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
     store.start_session()

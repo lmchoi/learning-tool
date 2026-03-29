@@ -67,6 +67,20 @@ class SessionStore:
             result_json=result_json,
         )
 
+    def update_attempt_result(
+        self,
+        attempt_id: int,
+        score: int,
+        result_json: str | None = None,
+    ) -> bool:
+        """Update an attempt's score and result_json by its primary key. Returns True if updated."""
+        with sqlite3.connect(self._db_path) as conn:
+            cursor = conn.execute(
+                "UPDATE attempts SET score = ?, result_json = ? WHERE id = ?",
+                (score, result_json, attempt_id),
+            )
+            return cursor.rowcount > 0
+
     def record_annotation(
         self,
         question_id: str,
@@ -230,7 +244,7 @@ class SessionStore:
             if row is None:
                 return None
             attempt_rows = conn.execute(
-                "SELECT session_id, question_id, question_text, answer_text,"
+                "SELECT id, session_id, question_id, question_text, answer_text,"
                 " score, timestamp, result_json"
                 " FROM attempts WHERE session_id = ? ORDER BY id",
                 (session_id,),
@@ -244,6 +258,7 @@ class SessionStore:
                     score=r["score"],
                     timestamp=r["timestamp"],
                     result_json=r["result_json"],
+                    attempt_id=r["id"],
                 )
                 for r in attempt_rows
             ]
@@ -263,7 +278,7 @@ class SessionStore:
             records = []
             for row in rows:
                 attempt_rows = conn.execute(
-                    "SELECT session_id, question_id, question_text, answer_text,"
+                    "SELECT id, session_id, question_id, question_text, answer_text,"
                     " score, timestamp, result_json"
                     " FROM attempts WHERE session_id = ? ORDER BY id",
                     (row["session_id"],),
@@ -277,6 +292,7 @@ class SessionStore:
                         score=r["score"],
                         timestamp=r["timestamp"],
                         result_json=r["result_json"],
+                        attempt_id=r["id"],
                     )
                     for r in attempt_rows
                 ]
