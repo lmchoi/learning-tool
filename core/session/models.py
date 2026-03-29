@@ -10,6 +10,7 @@ class QuestionAttempt:
     timestamp: str
     question_id: str | None = None
     result_json: str | None = None
+    attempt_id: int | None = None
 
 
 @dataclass
