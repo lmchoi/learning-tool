@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ context_name }} — capture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <h1>{{ context_name }}</h1>
+    <p class="muted">No more questions in the bank.</p>
+    <a class="submit" href="/ui/{{ context_name | urlencode }}/capture/export?session_id={{ session_id }}">Export for evaluation</a>
+    <nav>
+      <a href="/ui/{{ context_name | urlencode }}">← back</a>
+    </nav>
+  </body>
+</html>

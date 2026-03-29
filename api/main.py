@@ -324,6 +324,39 @@ async def get_capture(request: Request, context_name: str) -> HTMLResponse:
     )
 
 
+@app.post("/ui/{context_name}/capture", response_class=HTMLResponse, include_in_schema=False)
+async def post_capture(
+    request: Request,
+    context_name: str,
+    question: str = Form(...),
+    answer: str = Form(...),
+    session_id: str = Form(...),
+    question_id: str | None = Form(default=None),
+) -> HTMLResponse:
+    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    next_question, _ = await asyncio.gather(
+        asyncio.to_thread(bank_store.get_random),
+        asyncio.to_thread(session_store.record, session_id, question, answer, 0, question_id, None),
+    )
+    if next_question is None:
+        return templates.TemplateResponse(
+            request,
+            "capture_done.html",
+            {"context_name": context_name, "session_id": session_id},
+        )
+    return templates.TemplateResponse(
+        request,
+        "capture.html",
+        {
+            "context_name": context_name,
+            "question": next_question.question,
+            "question_id": next_question.id,
+            "session_id": session_id,
+        },
+    )
+
+
 @app.get("/ui/{context_name}/history", response_class=HTMLResponse, include_in_schema=False)
 async def get_history(request: Request, context_name: str) -> HTMLResponse:
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
