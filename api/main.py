@@ -732,6 +732,25 @@ async def get_bank_question_fragment(
     )
 
 
+@app.get("/api/questions/{context}", tags=["questions"])
+async def get_api_question(context: str, focus_area: str | None = None) -> dict[str, str]:
+    if not (app.state.store_dir / context).exists():
+        logger.warning("404 context not found: %s", context)
+        raise HTTPException(status_code=404, detail=f"Context '{context}' not found")
+
+    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context)
+    question = await asyncio.to_thread(bank_store.get_random, focus_area)
+    if question is None:
+        logger.warning("404 question bank empty for context: %s", context)
+        raise HTTPException(status_code=404, detail=f"No questions found for context '{context}'")
+
+    return {
+        "question_id": question.id,
+        "question": question.question,
+        "focus_area": question.focus_area,
+    }
+
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
