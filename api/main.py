@@ -22,6 +22,7 @@ from core.context_import.parser import parse_import
 from core.context_name import validate_context_name
 from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.export_prompt import build_export_prompt
+from core.evaluation.paste_back import parse_paste_back
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.store import ChunkStore, ContextStore
@@ -391,8 +392,55 @@ async def get_capture_export(request: Request, context_name: str, session_id: st
     )
 
 
+@app.post(
+    "/ui/{context_name}/capture/paste-back", response_class=HTMLResponse, include_in_schema=False
+)
+async def post_capture_paste_back(
+    request: Request,
+    context_name: str,
+    session_id: str = Form(...),
+    evaluation_text: str = Form(...),
+) -> RedirectResponse:
+    try:
+        validate_context_name(context_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    results = parse_paste_back(evaluation_text)
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+
+    matched_count = 0
+    unmatched_ids = []
+    for aid, eval_res in results:
+        updated = session_store.update_attempt_result(
+            aid, eval_res.score, eval_res.model_dump_json()
+        )
+        if updated:
+            matched_count += 1
+        else:
+            unmatched_ids.append(str(aid))
+
+    logger.info(
+        "paste-back complete: context=%s session=%s blocks=%d matched=%d unmatched=%d",
+        context_name,
+        session_id,
+        len(results),
+        matched_count,
+        len(unmatched_ids),
+    )
+    # Redirect to history (query params for a simple "flash" message)
+    url = f"/ui/{context_name}/history?matched={matched_count}"
+    if unmatched_ids:
+        url += f"&unmatched={','.join(unmatched_ids)}"
+    return RedirectResponse(url=url, status_code=303)
+
+
 @app.get("/ui/{context_name}/history", response_class=HTMLResponse, include_in_schema=False)
-async def get_history(request: Request, context_name: str) -> HTMLResponse:
+async def get_history(
+    request: Request,
+    context_name: str,
+    matched: int | None = None,
+    unmatched: str | None = None,
+) -> HTMLResponse:
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     raw_sessions = session_store.load_sessions()
     sessions = []
@@ -412,7 +460,12 @@ async def get_history(request: Request, context_name: str) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "history.html",
-        {"context_name": context_name, "sessions": sessions},
+        {
+            "context_name": context_name,
+            "sessions": sessions,
+            "matched": matched,
+            "unmatched": unmatched,
+        },
     )
 
 
