@@ -219,6 +219,41 @@ class SessionStore:
             )
             return cursor.lastrowid  # type: ignore[return-value]  # always set after INSERT on autoincrement table
 
+    def load_session(self, session_id: str) -> SessionRecord | None:
+        """Return a single session by session_id, or None if not found."""
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT session_id, context, started_at FROM sessions WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            attempt_rows = conn.execute(
+                "SELECT session_id, question_id, question_text, answer_text,"
+                " score, timestamp, result_json"
+                " FROM attempts WHERE session_id = ? ORDER BY id",
+                (session_id,),
+            ).fetchall()
+            attempts = [
+                QuestionAttempt(
+                    session_id=r["session_id"],
+                    question_id=r["question_id"],
+                    question_text=r["question_text"],
+                    answer_text=r["answer_text"],
+                    score=r["score"],
+                    timestamp=r["timestamp"],
+                    result_json=r["result_json"],
+                )
+                for r in attempt_rows
+            ]
+            return SessionRecord(
+                session_id=row["session_id"],
+                context=row["context"],
+                started_at=row["started_at"],
+                attempts=attempts,
+            )
+
     def load_sessions(self) -> list[SessionRecord]:
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row

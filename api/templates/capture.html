@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ context_name }} — capture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <h1>{{ context_name }}</h1>
+    <p class="muted">Answer each question. When you're done, export a prompt to paste into your LLM chat for evaluation.</p>
+    <div id="capture-area">
+      <p>{{ question }}</p>
+      <form
+        method="post"
+        action="/ui/{{ context_name }}/capture"
+      >
+        <input type="hidden" name="question" value="{{ question }}" />
+        <input type="hidden" name="question_id" value="{{ question_id }}" />
+        <input type="hidden" name="session_id" value="{{ session_id }}" />
+        <textarea
+          name="answer"
+          rows="5"
+          placeholder="Your answer..."
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit();}"
+        ></textarea>
+        <br />
+        <button type="submit" class="submit">Next</button>
+      </form>
+    </div>
+    <nav>
+      <a href="/ui/{{ context_name | urlencode }}">← back</a>
+    </nav>
+  </body>
+</html>
