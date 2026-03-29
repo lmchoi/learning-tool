@@ -1,4 +1,3 @@
-import os
 from collections.abc import Generator
 from unittest.mock import MagicMock, patch
 
@@ -29,9 +28,7 @@ def _make_client(
 @pytest.fixture()
 def client_with_question() -> Generator[tuple[TestClient, MagicMock]]:
     mock_store = MagicMock()
-    mock_store.get_random.return_value = BankQuestion.from_parts(
-        "biology", "What is a cell?"
-    )
+    mock_store.get_random.return_value = BankQuestion.from_parts("biology", "What is a cell?")
     yield from _make_client(mock_store)
 
 
@@ -65,8 +62,11 @@ def test_get_api_question_with_focus_area(
     client_with_question: tuple[TestClient, MagicMock],
 ) -> None:
     client, mock_store = client_with_question
-    client.get("/api/questions/biology?focus_area=mitochondria")
+    response = client.get("/api/questions/biology?focus_area=mitochondria")
 
+    assert response.status_code == 200
+    body = response.json()
+    assert body["focus_area"] == "biology"  # returned from MockStore
     mock_store.get_random.assert_called_with("mitochondria")
 
 
