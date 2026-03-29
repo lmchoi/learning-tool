@@ -15,8 +15,9 @@ def build_export_prompt(
     focus_section = ""
     if metadata is not None:
         goal_section = f"\n\n<goal>\n{metadata.goal}\n</goal>"
-        focus_items = "\n".join(f"- {area}" for area in metadata.focus_areas)
-        focus_section = f"\n\n<focus_areas>\n{focus_items}\n</focus_areas>"
+        if metadata.focus_areas:
+            focus_items = "\n".join(f"- {area}" for area in metadata.focus_areas)
+            focus_section = f"\n\n<focus_areas>\n{focus_items}\n</focus_areas>"
 
     qa_parts = []
     for attempt in attempts:
