@@ -411,6 +411,38 @@ def test_migrations_stamp_existing_db_without_alembic_version(tmp_path: Path) ->
     assert "alembic_version" in tables
 
 
+def test_record_with_unknown_session_id_is_visible_in_load_sessions(tmp_path: Path) -> None:
+    """Attempts recorded against a session_id not yet in sessions table still appear.
+
+    This is the MCP path: the adapter generates a session_id at startup and calls
+    record() directly without first calling start_session(). The session row must be
+    auto-created so the attempt is visible in load_sessions().
+    """
+    store = SessionStore(tmp_path, "ctx")
+    orphan_session_id = "mcp-session-abc123"
+
+    store.record(orphan_session_id, "What is X?", "It is Y.", 7)
+
+    sessions = store.load_sessions()
+    assert len(sessions) == 1
+    assert sessions[0].session_id == orphan_session_id
+    assert len(sessions[0].attempts) == 1
+    assert sessions[0].attempts[0].question_text == "What is X?"
+
+
+def test_record_with_same_session_id_twice_no_duplicate_session(tmp_path: Path) -> None:
+    """Multiple calls to record() with the same unknown session_id don't create duplicate rows."""
+    store = SessionStore(tmp_path, "ctx")
+    session_id = "mcp-session-xyz"
+
+    store.record(session_id, "Q1?", "A1.", 5)
+    store.record(session_id, "Q2?", "A2.", 8)
+
+    sessions = store.load_sessions()
+    assert len(sessions) == 1
+    assert len(sessions[0].attempts) == 2
+
+
 def test_load_annotations_flagged_and_sentiment_combined(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
     store.start_session()

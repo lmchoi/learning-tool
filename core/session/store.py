@@ -55,6 +55,8 @@ class SessionStore:
         result_json: str | None = None,
     ) -> int:
         """Record an attempt with the current timestamp. Returns the attempt id."""
+        timestamp = datetime.now(UTC).isoformat()
+        self._ensure_session(session_id, timestamp)
         return self._add_attempt(
             QuestionAttempt(
                 session_id=session_id,
@@ -62,7 +64,7 @@ class SessionStore:
                 question_text=question_text,
                 answer_text=answer_text,
                 score=score,
-                timestamp=datetime.now(UTC).isoformat(),
+                timestamp=timestamp,
             ),
             result_json=result_json,
         )
@@ -208,9 +210,24 @@ class SessionStore:
         return results[0] if results else None
 
     def _create_session(self, session_id: str, started_at: str) -> None:
+        # Intentionally uses INSERT (not INSERT OR IGNORE) — duplicate explicit
+        # start_session() calls should raise rather than silently succeed.
         with sqlite3.connect(self._db_path) as conn:
             conn.execute(
                 "INSERT INTO sessions (session_id, context, started_at) VALUES (?, ?, ?)",
+                (session_id, self._context, started_at),
+            )
+
+    def _ensure_session(self, session_id: str, started_at: str) -> None:
+        """Insert a session row if one does not already exist (no-op on conflict).
+
+        Used by record() to handle the MCP path, where the adapter generates a
+        session_id at startup without calling start_session(). For these sessions
+        started_at will equal the timestamp of the first recorded attempt.
+        """
+        with sqlite3.connect(self._db_path) as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO sessions (session_id, context, started_at) VALUES (?, ?, ?)",
                 (session_id, self._context, started_at),
             )
 
