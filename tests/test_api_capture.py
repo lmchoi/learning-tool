@@ -1,5 +1,7 @@
-from collections.abc import Generator
+from collections.abc import AsyncIterator, Generator
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -257,6 +259,34 @@ def test_get_capture_export_contains_format_instructions() -> None:
 
     assert "question_id" in response.text
     assert "score" in response.text
+
+
+async def _mock_async_gen(value: None) -> AsyncIterator[None]:
+    yield value
+
+
+def test_get_capture_export_contains_paste_back_form(tmp_path: Path) -> None:
+    # use a temp store dir to avoid test pollution
+    (tmp_path / "my-ctx").mkdir(parents=True, exist_ok=True)
+    store = SessionStore(tmp_path, "my-ctx")
+    sid = store.start_session()
+    store.record(sid, "Q1", "A1", 0)
+
+    # Mock lifespan and override store_dir
+    lifespan_mock = asynccontextmanager(lambda _: _mock_async_gen(None))
+    with (
+        patch("api.main.app.router.lifespan_context", lifespan_mock),
+        patch("api.main.STORE_DIR", tmp_path),
+        TestClient(app) as client,
+    ):
+        # Cast to Any to satisfy mypy for state access on TestClient app
+        any_app: Any = client.app
+        any_app.state.store_dir = tmp_path
+        resp = client.get(f"/ui/my-ctx/capture/export?session_id={sid}")
+        assert resp.status_code == 200
+        assert 'action="/ui/my-ctx/capture/paste-back"' in resp.text
+        assert 'name="evaluation_text"' in resp.text
+        assert "Import scores" in resp.text
 
 
 def test_get_capture_export_returns_404_for_unknown_session() -> None:
