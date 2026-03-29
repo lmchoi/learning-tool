@@ -88,3 +88,13 @@ def test_get_api_question_404_no_context(
 
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
+
+
+def test_get_api_question_400_invalid_context_name(
+    client_with_question: tuple[TestClient, MagicMock],
+) -> None:
+    client, _ = client_with_question
+    response = client.get("/api/questions/Marmots")  # uppercase — invalid
+
+    assert response.status_code == 400
+    assert "lowercase" in response.json()["detail"]
