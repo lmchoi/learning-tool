@@ -22,8 +22,9 @@ def build_export_prompt(
     qa_parts = []
     for attempt in attempts:
         qid = attempt.question_id or "unknown"
+        aid = attempt.attempt_id or 0
         qa_parts.append(
-            f'<question id="{qid}">\n{attempt.question_text}\n</question>\n'
+            f'<question id="{qid}" attempt_id="{aid}">\n{attempt.question_text}\n</question>\n'
             f"<answer>\n{attempt.answer_text}\n</answer>"
         )
     questions_and_answers = "\n\n".join(qa_parts)
