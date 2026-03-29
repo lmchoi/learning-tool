@@ -17,7 +17,7 @@ from google import genai
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from api.models import EvaluateRequest, EvaluationResponse, QuestionResponse
+from api.models import AttemptRequest, EvaluateRequest, EvaluationResponse, QuestionResponse
 from core.context_import.parser import parse_import
 from core.context_name import validate_context_name
 from core.evaluation.evaluate import evaluate_answer
@@ -730,6 +730,28 @@ async def get_bank_question_fragment(
             "session_id": session_id,
         },
     )
+
+
+@app.post("/api/attempts", tags=["attempts"], status_code=201)
+async def post_attempt(body: AttemptRequest) -> dict[str, int]:
+    try:
+        validate_context_name(body.context)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    if not (app.state.store_dir / body.context).exists():
+        logger.warning("404 context not found: %s", body.context)
+        raise HTTPException(status_code=404, detail=f"Context '{body.context}' not found")
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, body.context)
+    attempt_id = await asyncio.to_thread(
+        session_store.record,
+        body.session_id,
+        body.question,
+        body.answer,
+        body.score,
+        body.question_id,
+        json.dumps(body.evaluation),
+    )
+    return {"attempt_id": attempt_id}
 
 
 @app.get("/api/questions/{context}", tags=["questions"])

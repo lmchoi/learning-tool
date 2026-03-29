@@ -19,3 +19,13 @@ class EvaluationResponse(BaseModel):
     missing_points: list[str]
     suggested_addition: str | None
     follow_up_question: str
+
+
+class AttemptRequest(BaseModel):
+    context: str
+    session_id: str
+    question_id: str
+    question: str
+    answer: str
+    evaluation: dict[str, object]
+    score: int
