@@ -381,6 +381,7 @@ async def get_capture_export(request: Request, context_name: str, session_id: st
     )
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+    # TODO(#194): load real learner profile from context store instead of hardcoding beginner
     profile = UserProfile(experience_level="beginner")
     prompt = build_export_prompt(session.attempts, profile, metadata)
     return templates.TemplateResponse(
