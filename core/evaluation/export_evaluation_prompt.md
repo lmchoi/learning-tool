@@ -16,7 +16,8 @@ For each question, respond with a JSON block in this exact format:
 
 ```json
 {{
-  "question_id": "<question_id>",
+  "question_id": "<question_id from the tag>",
+  "attempt_id": <attempt_id from the tag>,
   "score": <0-10>,
   "strengths": ["..."],
   "gaps": ["..."],
