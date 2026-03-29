@@ -734,6 +734,7 @@ async def get_bank_question_fragment(
 
 @app.get("/api/questions/{context}", tags=["questions"])
 async def get_api_question(context: str, focus_area: str | None = None) -> dict[str, str]:
+    validate_context_name(context)
     if not (app.state.store_dir / context).exists():
         logger.warning("404 context not found: %s", context)
         raise HTTPException(status_code=404, detail=f"Context '{context}' not found")
