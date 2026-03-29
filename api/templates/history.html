@@ -12,6 +12,15 @@
     <h1>{{ context_name }}</h1>
     <a class="history-link" href="/ui/{{ context_name | urlencode }}">← back</a>
 
+    {% if matched is not none %}
+    <div class="flash">
+      Imported {{ matched }} evaluation{{ 's' if matched != 1 else '' }}.
+      {% if unmatched %}
+      <span class="warning">Unmatched IDs: {{ unmatched }}</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
     {% if not sessions %}
     <p class="muted">No sessions recorded yet.</p>
     {% else %}
