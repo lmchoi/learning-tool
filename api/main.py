@@ -344,6 +344,8 @@ async def post_capture(
         raise HTTPException(status_code=400, detail=str(e)) from e
     bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    # get_random may repeat questions already seen this session — intentional for now;
+    # session-aware deduplication can be added later if needed.
     next_question, _ = await asyncio.gather(
         asyncio.to_thread(bank_store.get_random),
         asyncio.to_thread(session_store.record, session_id, question, answer, 0, question_id, None),
