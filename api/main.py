@@ -302,6 +302,28 @@ async def post_evaluate_fragment(
     )
 
 
+@app.get("/ui/{context_name}/capture", response_class=HTMLResponse, include_in_schema=False)
+async def get_capture(request: Request, context_name: str) -> HTMLResponse:
+    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    question, session_id = await asyncio.gather(
+        asyncio.to_thread(bank_store.get_random),
+        asyncio.to_thread(session_store.start_session),
+    )
+    if question is None:
+        raise HTTPException(status_code=404, detail=f"No questions in bank for '{context_name}'")
+    return templates.TemplateResponse(
+        request,
+        "capture.html",
+        {
+            "context_name": context_name,
+            "question": question.question,
+            "question_id": question.id,
+            "session_id": session_id,
+        },
+    )
+
+
 @app.get("/ui/{context_name}/history", response_class=HTMLResponse, include_in_schema=False)
 async def get_history(request: Request, context_name: str) -> HTMLResponse:
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
