@@ -305,6 +305,10 @@ async def post_evaluate_fragment(
 
 @app.get("/ui/{context_name}/capture", response_class=HTMLResponse, include_in_schema=False)
 async def get_capture(request: Request, context_name: str) -> HTMLResponse:
+    try:
+        validate_context_name(context_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     question, session_id = await asyncio.gather(
@@ -334,6 +338,10 @@ async def post_capture(
     session_id: str = Form(...),
     question_id: str | None = Form(default=None),
 ) -> HTMLResponse:
+    try:
+        validate_context_name(context_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     next_question, _ = await asyncio.gather(
@@ -360,6 +368,10 @@ async def post_capture(
 
 @app.get("/ui/{context_name}/capture/export", response_class=HTMLResponse, include_in_schema=False)
 async def get_capture_export(request: Request, context_name: str, session_id: str) -> HTMLResponse:
+    try:
+        validate_context_name(context_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
     session, metadata = await asyncio.gather(
         asyncio.to_thread(session_store.load_session, session_id),
