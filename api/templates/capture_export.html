@@ -16,6 +16,19 @@
       onclick="navigator.clipboard.writeText(document.getElementById('export-prompt').textContent)"
       class="submit"
     >Copy to clipboard</button>
+
+    <hr class="separator" />
+
+    <div class="paste-back-section">
+      <h2>Import evaluation</h2>
+      <p class="muted">Paste the LLM response below to update your scores.</p>
+      <form action="/ui/{{ context_name | urlencode }}/capture/paste-back" method="post">
+        <input type="hidden" name="session_id" value="{{ session_id }}">
+        <textarea name="evaluation_text" rows="12" class="import-textarea" placeholder="Paste LLM response here..."></textarea>
+        <button type="submit" class="submit">Import scores</button>
+      </form>
+    </div>
+
     <nav>
       <a href="/ui/{{ context_name | urlencode }}/capture">← new capture session</a>
       &nbsp;·&nbsp;
