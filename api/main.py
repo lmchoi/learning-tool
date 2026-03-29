@@ -21,6 +21,7 @@ from api.models import EvaluateRequest, EvaluationResponse, QuestionResponse
 from core.context_import.parser import parse_import
 from core.context_name import validate_context_name
 from core.evaluation.evaluate import evaluate_answer
+from core.evaluation.export_prompt import build_export_prompt
 from core.evaluation.prompt import build_evaluation_prompt
 from core.ingestion.embedder import SentenceTransformerEmbedder
 from core.ingestion.store import ChunkStore, ContextStore
@@ -354,6 +355,24 @@ async def post_capture(
             "question_id": next_question.id,
             "session_id": session_id,
         },
+    )
+
+
+@app.get("/ui/{context_name}/capture/export", response_class=HTMLResponse, include_in_schema=False)
+async def get_capture_export(request: Request, context_name: str, session_id: str) -> HTMLResponse:
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    session, metadata = await asyncio.gather(
+        asyncio.to_thread(session_store.load_session, session_id),
+        asyncio.to_thread(app.state.context_store.load_context, context_name),
+    )
+    if session is None:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+    profile = UserProfile(experience_level="beginner")
+    prompt = build_export_prompt(session.attempts, profile, metadata)
+    return templates.TemplateResponse(
+        request,
+        "capture_export.html",
+        {"context_name": context_name, "prompt": prompt, "session_id": session_id},
     )
 
 
