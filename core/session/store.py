@@ -33,9 +33,10 @@ class SessionStore:
             }
 
         if tables and "alembic_version" not in tables:
-            # Existing DB previously managed by _migrate() — stamp as already at head
-            # so future migrations apply on top without re-running the baseline.
-            command.stamp(cfg, "head")
+            # Existing DB previously managed by _migrate() — stamp at the last revision
+            # that matches the pre-alembic schema (baseline + question_id index) so that
+            # any migrations added after that point are applied by the upgrade below.
+            command.stamp(cfg, "b4e7f91c2a83")
 
         command.upgrade(cfg, "head")
 

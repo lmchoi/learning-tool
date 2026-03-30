@@ -443,6 +443,53 @@ def test_record_with_same_session_id_twice_no_duplicate_session(tmp_path: Path) 
     assert len(sessions[0].attempts) == 2
 
 
+def test_fresh_db_has_focus_area_column(tmp_path: Path) -> None:
+    """Fresh DB created via migrations has focus_area column on attempts table."""
+    SessionStore(tmp_path, "ctx")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(attempts)").fetchall()}
+
+    assert "focus_area" in cols
+
+
+def test_existing_db_migrates_to_add_focus_area(tmp_path: Path) -> None:
+    """Existing DB without focus_area column gets it added via migration."""
+    ctx_dir = tmp_path / "ctx"
+    ctx_dir.mkdir()
+    db_path = ctx_dir / "sessions.db"
+
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            "CREATE TABLE sessions"
+            " (session_id TEXT PRIMARY KEY, context TEXT NOT NULL, started_at TEXT NOT NULL);"
+            "CREATE TABLE attempts"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,"
+            " question_id TEXT, question_text TEXT NOT NULL, answer_text TEXT NOT NULL,"
+            " score INTEGER NOT NULL, result_json TEXT, timestamp TEXT NOT NULL);"
+            "CREATE TABLE chunks"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            " attempt_id INTEGER NOT NULL REFERENCES attempts(id),"
+            " chunk_text TEXT NOT NULL, score REAL);"
+            "CREATE TABLE annotations"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, attempt_id INTEGER REFERENCES attempts(id),"
+            " question_id TEXT, target_type TEXT NOT NULL, sentiment TEXT NOT NULL,"
+            " comment TEXT, created_at TEXT NOT NULL, flagged_at TEXT,"
+            " UNIQUE(question_id, target_type));"
+            "INSERT INTO sessions VALUES ('s1', 'ctx', '2024-01-01T00:00:00+00:00');"
+            "INSERT INTO attempts"
+            " VALUES (1, 's1', 'qid-1', 'Q?', 'A.', 5, NULL, '2024-01-01T00:00:00+00:00');"
+        )
+
+    SessionStore(tmp_path, "ctx")
+
+    with sqlite3.connect(db_path) as conn:
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(attempts)").fetchall()}
+
+    assert "focus_area" in cols
+
+
 def test_load_annotations_flagged_and_sentiment_combined(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
     store.start_session()
