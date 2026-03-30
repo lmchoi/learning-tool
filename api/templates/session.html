@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ context_name }} — {% if session is none %}session not found{% else %}session results{% endif %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <h1>{{ context_name }}</h1>
+    <a class="history-link" href="/ui/{{ context_name | urlencode }}/history">← back</a>
+
+    {% if session is none %}
+    <p class="muted">Session not found.</p>
+    {% else %}
+    <div class="session-card">
+      <p class="session-meta">
+        {{ session.started_at[:10] }}
+        &nbsp;·&nbsp;
+        {{ attempts | length }} question{{ 's' if attempts | length != 1 else '' }}
+        {% if attempts %}
+        &nbsp;·&nbsp;
+        avg {{ (attempts | map(attribute='attempt') | map(attribute='score') | sum / attempts | length) | round(1) }}/10
+        {% endif %}
+      </p>
+
+      {% for item in attempts %}
+      <div class="attempt-card">
+        <p class="attempt-question">{{ item.attempt.question_text }}</p>
+        <p class="attempt-answer muted">{{ item.attempt.answer_text }}</p>
+        <p class="score">{{ item.attempt.score }}/10</p>
+
+        {% if item.result %}
+        {% if item.result.strengths %}
+        <p class="section-heading">Strengths</p>
+        <ul>
+          {% for s in item.result.strengths %}<li>{{ s }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if item.result.gaps %}
+        <p class="section-heading">Gaps</p>
+        <ul>
+          {% for g in item.result.gaps %}<li>{{ g }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if item.result.missing_points %}
+        <p class="section-heading">Missing points</p>
+        <ul>
+          {% for m in item.result.missing_points %}<li>{{ m }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if item.result.suggested_addition %}
+        <p class="suggested-addition">{{ item.result.suggested_addition }}</p>
+        {% endif %}
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </body>
+</html>

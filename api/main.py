@@ -434,6 +434,35 @@ async def post_capture_paste_back(
     return RedirectResponse(url=url, status_code=303)
 
 
+@app.get(
+    "/ui/{context_name}/sessions/{session_id}", response_class=HTMLResponse, include_in_schema=False
+)
+async def get_session_results(request: Request, context_name: str, session_id: str) -> HTMLResponse:
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    session = session_store.load_session(session_id)
+    if session is None:
+        return templates.TemplateResponse(
+            request,
+            "session.html",
+            {"context_name": context_name, "session": None, "attempts": []},
+            status_code=404,
+        )
+    attempts = []
+    for a in session.attempts:
+        result = None
+        if a.result_json:
+            try:
+                result = json.loads(a.result_json)
+            except json.JSONDecodeError:
+                logger.warning("malformed result_json for attempt in session %s", session_id)
+        attempts.append({"attempt": a, "result": result})
+    return templates.TemplateResponse(
+        request,
+        "session.html",
+        {"context_name": context_name, "session": session, "attempts": attempts},
+    )
+
+
 @app.get("/ui/{context_name}/history", response_class=HTMLResponse, include_in_schema=False)
 async def get_history(
     request: Request,
