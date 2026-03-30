@@ -210,6 +210,11 @@ record_attempt(question_id: str, answer: str, evaluation: str, score: int) -> No
 
 record_annotation(question_id: str, sentiment: "up" | "down", comment: str | None = None) -> None
 # Records user feedback — mid-session flag, skip, or post-evaluation disagreement.
+
+end_session(context: str) -> str
+# Signals the session is over. Returns an absolute URL to the session results page
+# so Claude can present it as a clickable link.
+# URL format: {BASE_URL}/ui/{context}/sessions/{session_id}
 ```
 
 Start with `get_question` only to validate the flow feels natural. Add `record_attempt`
