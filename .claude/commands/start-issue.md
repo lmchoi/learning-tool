@@ -1,3 +1,7 @@
+---
+model: haiku
+---
+
 # Start Issue Skill
 
 Given a refined GitHub issue number, create a worktree and branch, and move the issue to "In Progress" on the project board.
