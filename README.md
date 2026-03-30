@@ -1,59 +1,8 @@
 # learning-tool
 
 A domain-agnostic personalised learning tool. The tool doesn't know what you're
-learning — you plug in a context (knowledge base + learner profile + config) and
-it generates questions, evaluates answers, and asks follow-ups.
-
-## Architecture
-
-```mermaid
-C4Component
-    title Ingestion pipeline
-
-    Container_Boundary(core, "core") {
-        Component(ingest, "ingest", "ingestion/ingest.py", "Orchestrates the pipeline")
-        Component(sources, "sources", "ingestion/sources.py", "Loads local file paths from sources.yaml")
-        Component(chunker, "chunker", "ingestion/chunker.py", "Splits text into paragraph chunks")
-        Component(embedder, "embedder", "ingestion/embedder.py", "Embeds chunks into float32 vectors")
-        Component(store, "store", "ingestion/store.py", "Persists chunks and embeddings keyed by context")
-    }
-
-    SystemDb(config, "sources.yaml", "Local file paths to ingest")
-    System(st, "sentence-transformers", "all-MiniLM-L6-v2")
-    SystemDb(disk, "Disk", "chunks.json + embeddings.npy")
-
-    Rel(ingest, sources, "load paths")
-    Rel(sources, config, "read paths")
-    Rel(sources, chunker, "passes text")
-    Rel(chunker, embedder, "passes chunks")
-    Rel(embedder, store, "passes embeddings")
-    Rel(store, disk, "persist")
-    Rel(embedder, st, "encode")
-    UpdateLayoutConfig($c4ShapeInRow="5", $c4BoundaryInRow="1")
-
-```
-
-```mermaid
-C4Component
-    title Retrieval pipeline
-
-    SystemDb(disk, "Disk", "chunks.json + embeddings.npy")
-    System(st, "sentence-transformers", "all-MiniLM-L6-v2")
-
-    Container_Boundary(core, "core") {
-        Component(store, "store", "ingestion/store.py", "Persists chunks and embeddings keyed by context")
-        Component(embedder, "embedder", "ingestion/embedder.py", "Embeds chunks into float32 vectors")
-        Component(retriever, "retriever", "rag/retriever.py", "Returns top-k chunks for a query")
-        Component(similarity, "similarity", "rag/similarity.py", "Ranks chunks by cosine similarity")
-    }
-
-    Rel(store, disk, "read")
-    Rel(retriever, store, "loads chunks + embeddings")
-    Rel(retriever, embedder, "embeds query")
-    Rel(retriever, similarity, "ranks chunks")
-    Rel(embedder, st, "encode")
-    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
-```
+learning — you plug in a context (knowledge base + config) and it generates
+questions, evaluates answers, and tracks your progress over time.
 
 ## How it's built
 
@@ -69,8 +18,6 @@ with code examples. `contexts/user/` holds a learner profile — what you know
 and don't yet, which drives question difficulty and how explanations are pitched.
 
 Run `/update-notes` at the end of a Claude Code session to keep both up to date.
-The command checks what was covered in the conversation, updates existing notes,
-and proposes new topic files if something doesn't have a home yet.
 
 ## Prerequisites
 
@@ -83,87 +30,44 @@ and proposes new topic files if something doesn't have a home yet.
 uv sync
 ```
 
+Copy `.env.example` to `.env` and fill in your API keys, or put them in `~/.secrets/.env`.
+
 ## Usage
 
-Plug in a context — a folder of documents about whatever you're learning — and the
-tool generates practice questions grounded in that material.
+There are two ways to practise: the **web UI** and **Claude Desktop via MCP**.
+Both read from and write to the same session store.
 
-### 1. Prepare your context
+### Web UI
 
-Create a directory under `contexts/` and add your learning material as text or
-markdown files. `contexts/` is gitignored so your personal data stays local.
-
-### 2. Ingest
+Start the server:
 
 ```bash
-make ingest context=<name> files=<path>
-# e.g.
-make ingest context=biology files=contexts/biology/notes.md
+make serve
 ```
 
-### 3. Generate a question
+Then open `http://localhost:8000`.
 
-Retrieves relevant chunks and asks Claude to generate a practice question.
-Requires `ANTHROPIC_API_KEY` set in your environment (copy `.env.example` to `.env`).
+**Flow:**
 
-```bash
-make question context=<name> query="<topic>"
-# e.g.
-make question context=biology query="what is the role of mitochondria"
-```
+1. **Create a context** — go to `/ui/{context}/setup`, copy the prompt into any AI chat, and paste the response back. This imports your goal, focus areas, and seed questions.
+2. **Practice** — pick a context from the home page, choose a focus area, and work through questions. Each answer is evaluated and scored automatically.
+3. **Review** — after a session, view results at `/ui/{context}/sessions/{session_id}`. Past attempts at the same question are shown alongside, so you can see whether you're improving.
+4. **History** — `/ui/{context}/history` lists all your sessions with attempt counts and average scores.
 
-Use `--experience-level` to tailor the question to the learner:
+### Claude Desktop (MCP)
 
-```bash
-uv run learn question biology "what is the role of mitochondria" --experience-level beginner
-```
+Practice directly inside a Claude Desktop conversation. The MCP server connects
+to the running FastAPI app and exposes three tools:
 
-### 4. Practice interactively
+| Tool | What it does |
+|---|---|
+| `get_question` | Fetches a question from the bank for a context and optional focus area |
+| `record_attempt` | Records your answer with a score |
+| `end_session` | Returns a URL to the session results page |
 
-The main way to use the tool. Generates a question, prompts for your answer, evaluates it, then automatically asks the follow-up question. Continues until you decline or press Ctrl+C.
+**One-time setup:**
 
-```bash
-make practice context=<name> query="<topic>"
-# e.g.
-make practice context=biology query="mitochondria"
-```
-
-### 5. Evaluate a single answer
-
-For one-off evaluation outside the practice loop.
-
-```bash
-make evaluate context=<name> query="<topic>" question="<question text>" answer="<answer text>"
-# e.g.
-make evaluate context=biology query="mitochondria" question="What is the role of mitochondria?" answer="They produce energy for the cell."
-```
-
-The output includes a score, strengths, gaps, missing points, and a suggested addition.
-
-### 6. Inspect the prompt without calling the API
-
-Useful for verifying retrieval quality before spending API credits:
-
-```bash
-make prompt context=<name> query="<topic>"
-# e.g.
-make prompt context=biology query="what is the role of mitochondria"
-```
-
-## Claude Desktop MCP setup
-
-The MCP server lets Claude Desktop call the learning tool during a practice session.
-It runs locally via stdio and communicates with the FastAPI app.
-
-### Prerequisites
-
-- Dependencies installed (`uv sync`)
-- The FastAPI app must be running (`uv run uvicorn api.main:app`)
-- Claude Desktop installed
-
-### One-time setup
-
-Add the following entry to Claude Desktop's `claude_desktop_config.json`:
+Add the following to Claude Desktop's `claude_desktop_config.json`:
 
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
@@ -186,36 +90,55 @@ Add the following entry to Claude Desktop's `claude_desktop_config.json`:
 }
 ```
 
-Replace `/absolute/path/to/learning-tool` with the absolute path to this repo on your machine.
+Replace `/absolute/path/to/learning-tool` with the absolute path to this repo.
+Restart Claude Desktop after saving. The MCP server requires the FastAPI app
+to be running (`make serve`).
 
-Restart Claude Desktop after saving the config. The server starts automatically
-when Claude Desktop launches.
+## `contexts/`
+
+`contexts/` is gitignored — it holds your personal learning data (knowledge
+base, session history, question bank). Create a directory per context and add
+your learning material as text or markdown files before ingesting.
 
 ## Database migrations
 
 Schema changes are managed with [Alembic](https://alembic.sqlalchemy.org/en/latest/).
 Migrations run automatically on startup — no manual step required.
 
-### Making a schema change
-
-1. Add a migration file under `alembic/versions/` — see the [Alembic tutorial](https://alembic.sqlalchemy.org/en/latest/tutorial.html) or copy `alembic/versions/001_baseline.py` as a starting point. Use `op.execute()` with raw SQL; no SQLAlchemy ORM needed.
-2. Set `down_revision` to the previous revision ID and pick a new `revision` ID.
-3. Write both `upgrade()` and `downgrade()`.
-
-### Rolling back a migration
+To roll back a migration:
 
 ```bash
 uv run alembic -x sqlalchemy.url="sqlite:///contexts/store/<context>/sessions.db" downgrade -1
 ```
 
-### Verifying the current revision
+To check the current revision:
 
 ```bash
 sqlite3 contexts/store/<context>/sessions.db "SELECT * FROM alembic_version;"
 ```
 
-## Running checks
+---
+
+## Dev tooling
+
+### Checks
 
 ```bash
-make checks
+make checks   # ruff + mypy + pytest
+make test     # pytest only
+make coverage # pytest with coverage report
+```
+
+### CLI commands
+
+These are lower-level tools used for context setup and debugging. The web UI
+covers the same ground for day-to-day use.
+
+```bash
+make ingest context=<name> files=<path>                                         # ingest files into a context
+make load-questions context=<name> file=<path>                                  # load questions from YAML into the bank
+make prompt context=<name> query="<topic>"                                      # print the question prompt without calling the API
+make question context=<name> query="<topic>"                                    # generate a single question
+make evaluate context=<name> query="<topic>" question="<q>" answer="<a>"       # evaluate a single answer
+make practice context=<name> query="<topic>"                                    # interactive CLI practice loop
 ```
