@@ -90,6 +90,51 @@ async def test_record_attempt_404_context_not_found(mock_client: MagicMock) -> N
 
 
 @pytest.mark.asyncio
+async def test_record_attempt_forwards_focus_area(mock_client: MagicMock) -> None:
+    mock_response = MagicMock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {"attempt_id": 5}
+    mock_response.raise_for_status = MagicMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+
+    await record_attempt(
+        context="biology",
+        question_id="q-1",
+        question="What is a cell?",
+        answer="The smallest unit of life.",
+        evaluation={"score": 8},
+        score=8,
+        focus_area="mitochondria",
+    )
+
+    _, kwargs = mock_client.post.call_args
+    payload = kwargs["json"]
+    assert payload["focus_area"] == "mitochondria"
+
+
+@pytest.mark.asyncio
+async def test_record_attempt_focus_area_none_when_not_passed(mock_client: MagicMock) -> None:
+    mock_response = MagicMock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {"attempt_id": 6}
+    mock_response.raise_for_status = MagicMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+
+    await record_attempt(
+        context="biology",
+        question_id="q-1",
+        question="What is a cell?",
+        answer="The smallest unit of life.",
+        evaluation={},
+        score=5,
+    )
+
+    _, kwargs = mock_client.post.call_args
+    payload = kwargs["json"]
+    assert payload.get("focus_area") is None
+
+
+@pytest.mark.asyncio
 async def test_record_attempt_api_error(mock_client: MagicMock) -> None:
     mock_client.post = AsyncMock(side_effect=Exception("Connection refused"))
 

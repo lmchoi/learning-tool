@@ -68,6 +68,7 @@ async def record_attempt(
     answer: str,
     evaluation: dict[str, object],
     score: int,
+    focus_area: str | None = None,
 ) -> dict[str, object] | str:
     """Record an evaluated attempt for a practice question.
 
@@ -81,9 +82,10 @@ async def record_attempt(
         answer: The learner's answer.
         evaluation: Structured evaluation dict (score, strengths, gaps, etc.).
         score: Integer score (e.g. 1–10).
+        focus_area: Focus area from the get_question response (optional).
     """
     url = f"{API_URL}/api/attempts"
-    payload = {
+    payload: dict[str, object] = {
         "context": context,
         "session_id": session_id,
         "question_id": question_id,
@@ -91,6 +93,7 @@ async def record_attempt(
         "answer": answer,
         "evaluation": evaluation,
         "score": score,
+        "focus_area": focus_area,
     }
 
     async with httpx.AsyncClient() as client:
