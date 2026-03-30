@@ -29,3 +29,4 @@ class AttemptRequest(BaseModel):
     answer: str
     evaluation: dict[str, object]
     score: int
+    focus_area: str | None = None
