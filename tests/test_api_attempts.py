@@ -76,6 +76,25 @@ def test_post_attempt_records_to_session_store(client_ok: tuple[TestClient, Magi
     assert args[5] == json.dumps({"score": 7, "strengths": ["correct"], "gaps": []})
 
 
+def test_post_attempt_threads_focus_area(client_ok: tuple[TestClient, MagicMock]) -> None:
+    client, mock_store = client_ok
+    payload = {**_VALID_PAYLOAD, "focus_area": "cell biology"}
+    client.post("/api/attempts", json=payload)
+
+    call_args = mock_store.record.call_args
+    # focus_area is passed as a keyword argument
+    assert call_args.kwargs["focus_area"] == "cell biology"
+
+
+def test_post_attempt_focus_area_defaults_to_none(client_ok: tuple[TestClient, MagicMock]) -> None:
+    client, mock_store = client_ok
+    client.post("/api/attempts", json=_VALID_PAYLOAD)
+
+    call_args = mock_store.record.call_args
+    # focus_area not in payload → passes None
+    assert call_args.kwargs["focus_area"] is None
+
+
 def test_post_attempt_400_invalid_context_name(client_ok: tuple[TestClient, MagicMock]) -> None:
     client, _ = client_ok
     payload = {**_VALID_PAYLOAD, "context": "../evil"}
