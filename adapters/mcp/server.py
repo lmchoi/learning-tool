@@ -13,6 +13,8 @@ import uuid
 import httpx
 from mcp.server.fastmcp import FastMCP
 
+from core.settings import BASE_URL
+
 mcp = FastMCP("learning-tool")
 
 # Default to localhost if not specified
@@ -111,6 +113,20 @@ async def record_attempt(
                 f"Error connecting to API at {API_URL}: {e}. "
                 "Make sure the FastAPI server is running."
             )
+
+
+@mcp.tool()
+async def end_session(context: str) -> str:
+    """Signal that the practice session is over and return the results URL.
+
+    Call this when the learner wants to finish their session. Returns an
+    absolute URL to the session results page that can be presented as a
+    clickable link.
+
+    Args:
+        context: The name of the learning context (e.g., 'biology', 'git').
+    """
+    return f"{BASE_URL}/ui/{context}/sessions/{session_id}"
 
 
 if __name__ == "__main__":
