@@ -1,3 +1,7 @@
+---
+model: sonnet
+---
+
 # Implement Issue Skill
 
 Implement a refined GitHub issue inside its worktree. Run this after `/start-issue` has set up the worktree and branch.
