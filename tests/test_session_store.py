@@ -443,6 +443,26 @@ def test_record_with_same_session_id_twice_no_duplicate_session(tmp_path: Path) 
     assert len(sessions[0].attempts) == 2
 
 
+def test_record_stores_focus_area(tmp_path: Path) -> None:
+    """focus_area passed to record() is persisted and readable back."""
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q?", "A.", 7, focus_area="mitochondria")
+
+    sessions = store.load_sessions()
+    assert sessions[0].attempts[0].focus_area == "mitochondria"
+
+
+def test_record_focus_area_defaults_to_none(tmp_path: Path) -> None:
+    """focus_area defaults to None when not passed."""
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "Q?", "A.", 7)
+
+    sessions = store.load_sessions()
+    assert sessions[0].attempts[0].focus_area is None
+
+
 def test_fresh_db_has_focus_area_column(tmp_path: Path) -> None:
     """Fresh DB created via migrations has focus_area column on attempts table."""
     SessionStore(tmp_path, "ctx")

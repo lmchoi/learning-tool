@@ -54,6 +54,7 @@ class SessionStore:
         score: int,
         question_id: str | None = None,
         result_json: str | None = None,
+        focus_area: str | None = None,
     ) -> int:
         """Record an attempt with the current timestamp. Returns the attempt id."""
         timestamp = datetime.now(UTC).isoformat()
@@ -66,6 +67,7 @@ class SessionStore:
                 answer_text=answer_text,
                 score=score,
                 timestamp=timestamp,
+                focus_area=focus_area,
             ),
             result_json=result_json,
         )
@@ -237,8 +239,8 @@ class SessionStore:
             cursor = conn.execute(
                 "INSERT INTO attempts"
                 " (session_id, question_id, question_text, answer_text,"
-                " score, result_json, timestamp)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                " score, result_json, timestamp, focus_area)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     attempt.session_id,
                     attempt.question_id,
@@ -247,6 +249,7 @@ class SessionStore:
                     attempt.score,
                     result_json,
                     attempt.timestamp,
+                    attempt.focus_area,
                 ),
             )
             return cursor.lastrowid  # type: ignore[return-value]  # always set after INSERT on autoincrement table
@@ -263,7 +266,7 @@ class SessionStore:
                 return None
             attempt_rows = conn.execute(
                 "SELECT id, session_id, question_id, question_text, answer_text,"
-                " score, timestamp, result_json"
+                " score, timestamp, result_json, focus_area"
                 " FROM attempts WHERE session_id = ? ORDER BY id",
                 (session_id,),
             ).fetchall()
@@ -277,6 +280,7 @@ class SessionStore:
                     timestamp=r["timestamp"],
                     result_json=r["result_json"],
                     attempt_id=r["id"],
+                    focus_area=r["focus_area"],
                 )
                 for r in attempt_rows
             ]
@@ -297,7 +301,7 @@ class SessionStore:
             for row in rows:
                 attempt_rows = conn.execute(
                     "SELECT id, session_id, question_id, question_text, answer_text,"
-                    " score, timestamp, result_json"
+                    " score, timestamp, result_json, focus_area"
                     " FROM attempts WHERE session_id = ? ORDER BY id",
                     (row["session_id"],),
                 ).fetchall()
@@ -311,6 +315,7 @@ class SessionStore:
                         timestamp=r["timestamp"],
                         result_json=r["result_json"],
                         attempt_id=r["id"],
+                        focus_area=r["focus_area"],
                     )
                     for r in attempt_rows
                 ]
