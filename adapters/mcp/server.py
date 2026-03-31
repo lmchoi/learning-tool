@@ -129,5 +129,46 @@ async def end_session(context: str) -> str:
     return f"{BASE_URL}/ui/{context}/sessions/{session_id}"
 
 
+@mcp.tool()
+async def create_context(name: str, goal: str, focus_areas: list[dict[str, object]]) -> str:
+    """Create a new learning context draft and return a review URL.
+
+    Args:
+        name: Short, slug-friendly name for the context (e.g., 'react-hooks').
+        goal: The high-level learning goal.
+        focus_areas: List of dicts with 'name' (str) and 'questions' (list of str).
+            Example: [{"name": "Hooks", "questions": ["What is a hook?"]}]
+    """
+    url = f"{API_URL}/api/contexts/{name}/draft"
+    payload = {
+        "goal": goal,
+        "focus_areas": focus_areas,
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post(url, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            # Handle potential double slashes in BASE_URL + review_url
+            base = BASE_URL.rstrip("/")
+            review = data["review_url"].lstrip("/")
+            review_url = f"{base}/{review}"
+            return f"Draft created! Review and confirm here: {review_url}"
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 422:
+                try:
+                    detail = e.response.json().get("detail", str(e))
+                    return f"Validation error: {detail}"
+                except Exception:
+                    return f"Validation error: {e.response.text}"
+            return f"Error creating draft: {e}"
+        except Exception as e:
+            return (
+                f"Error connecting to API at {API_URL}: {e}. "
+                "Make sure the FastAPI server is running."
+            )
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
