@@ -17,8 +17,16 @@ from google import genai
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from api.models import AttemptRequest, EvaluateRequest, EvaluationResponse, QuestionResponse
-from core.context_import.parser import parse_import
+from api.models import (
+    AttemptRequest,
+    DraftRequest,
+    DraftResponse,
+    EvaluateRequest,
+    EvaluationResponse,
+    QuestionResponse,
+)
+from core.context_import.draft_store import DraftStore
+from core.context_import.parser import ImportedContext, parse_import
 from core.context_name import validate_context_name
 from core.evaluation.evaluate import evaluate_answer
 from core.evaluation.export_prompt import build_export_prompt
@@ -65,6 +73,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("retriever ready")
     app.state.store_dir = store_dir
     app.state.context_store = ContextStore(store_dir)
+    app.state.draft_store = DraftStore(store_dir)
     if not os.environ.get("GEMINI_API_KEY"):
         raise ValueError("GEMINI_API_KEY is not set")
     app.state.anthropic = AsyncAnthropic()
@@ -164,6 +173,41 @@ async def post_import(
         context_name,
         len(imported.focus_areas),
     )
+    return templates.TemplateResponse(
+        request,
+        "import_review.html",
+        {
+            "context_name": context_name,
+            "goal": imported.goal,
+            "focus_areas_questions": imported.questions,
+        },
+    )
+
+
+@app.post("/api/contexts/{context_name}/draft", response_model=DraftResponse)
+async def create_draft(request: Request, context_name: str, body: DraftRequest) -> DraftResponse:
+    try:
+        validate_context_name(context_name)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    questions = [(fa.name, fa.questions) for fa in body.focus_areas]
+    imported = ImportedContext(goal=body.goal, questions=questions)
+
+    draft_id = app.state.draft_store.save(context_name, imported)
+    review_url = f"/ui/{context_name}/review/{draft_id}"
+
+    return DraftResponse(draft_id=draft_id, review_url=review_url)
+
+
+@app.get(
+    "/ui/{context_name}/review/{draft_id}", response_class=HTMLResponse, include_in_schema=False
+)
+async def get_review(request: Request, context_name: str, draft_id: str) -> HTMLResponse:
+    imported = app.state.draft_store.load(context_name, draft_id)
+    if not imported:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
     return templates.TemplateResponse(
         request,
         "import_review.html",
