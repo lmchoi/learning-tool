@@ -30,3 +30,18 @@ class AttemptRequest(BaseModel):
     evaluation: dict[str, object]
     score: int
     focus_area: str | None = None
+
+
+class FocusAreaRequest(BaseModel):
+    name: str
+    questions: list[str]
+
+
+class DraftRequest(BaseModel):
+    goal: str
+    focus_areas: list[FocusAreaRequest]
+
+
+class DraftResponse(BaseModel):
+    draft_id: str
+    review_url: str
