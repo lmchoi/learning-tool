@@ -111,9 +111,17 @@ def _get_bank_store(
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def get_index(request: Request) -> HTMLResponse:
     store_dir: Path = request.app.state.store_dir
-    contexts = (
-        sorted(p.name for p in store_dir.iterdir() if p.is_dir()) if store_dir.exists() else []
-    )
+    context_store: ContextStore = request.app.state.context_store
+    contexts: list[dict[str, str | None]] = []
+    if store_dir.exists():
+        names = sorted(p.name for p in store_dir.iterdir() if p.is_dir())
+        metas = await asyncio.gather(
+            *[asyncio.to_thread(context_store.load_context, name) for name in names]
+        )
+        contexts = [
+            {"name": name, "goal": meta.goal if meta else None}
+            for name, meta in zip(names, metas, strict=True)
+        ]
     return templates.TemplateResponse(request, "index.html", {"contexts": contexts})
 
 
