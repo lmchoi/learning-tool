@@ -11,9 +11,12 @@
   <body>
     <h1>Learning Tool</h1>
     {% if contexts %}
-    <div class="focus-areas">
+    <div class="context-list">
       {% for ctx in contexts %}
-      <a class="focus-area" href="/ui/{{ ctx | urlencode }}">{{ ctx }}</a>
+      <a class="context-card" href="/ui/{{ ctx.name | urlencode }}">
+        <span class="card-title">{{ ctx.name }}</span>
+        <span class="card-goal">{% if ctx.goal %}{{ ctx.goal }}{% else %}No goal set{% endif %}</span>
+      </a>
       {% endfor %}
     </div>
     {% else %}
