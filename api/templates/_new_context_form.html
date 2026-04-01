@@ -1,0 +1,10 @@
+<div id="new-context-widget">
+  <form hx-post="/ui/contexts" hx-target="#new-context-widget" hx-swap="outerHTML">
+    <input type="text" name="name" placeholder="context-name" autofocus required />
+    <button type="submit">Create</button>
+    <button type="button" hx-get="/" hx-select="#new-context-widget" hx-target="#new-context-widget" hx-swap="outerHTML">cancel</button>
+    {% if error %}
+    <span class="error">{{ error }}</span>
+    {% endif %}
+  </form>
+</div>

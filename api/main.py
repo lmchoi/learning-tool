@@ -134,6 +134,25 @@ async def get_index(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "index.html", {"contexts": contexts})
 
 
+@app.get("/ui/_new-context-form", response_class=HTMLResponse, include_in_schema=False)
+async def get_new_context_form(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "_new_context_form.html")
+
+
+@app.post("/ui/contexts", response_class=HTMLResponse, include_in_schema=False)
+async def post_contexts(request: Request, name: str = Form(...)) -> HTMLResponse:
+    try:
+        validate_context_name(name)
+    except ValueError as e:
+        return templates.TemplateResponse(
+            request,
+            "_new_context_form.html",
+            {"error": str(e)},
+            status_code=400,
+        )
+    return HTMLResponse(headers={"HX-Redirect": f"/ui/{name}/setup"})
+
+
 @app.get("/ui/{context_name}", response_class=HTMLResponse, include_in_schema=False)
 async def get_ui(request: Request, context_name: str, query: str | None = None) -> HTMLResponse:
     if query is None:
