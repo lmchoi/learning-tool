@@ -13,6 +13,12 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 PROJECT_ROOT=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --show-toplevel 2>/dev/null) || exit 0
 cd "$PROJECT_ROOT" || exit 0
 
+CURRENT_BRANCH=$(git branch --show-current)
+if [[ "$CURRENT_BRANCH" == "main" ]]; then
+    echo "ERROR: Do not commit directly to main. Create a feature branch first." >&2
+    exit 2
+fi
+
 ERRORS=""
 OUTPUT=""
 
