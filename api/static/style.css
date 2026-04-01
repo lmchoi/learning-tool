@@ -257,6 +257,44 @@ button.thumb-down:hover {
   color: #ffffff;
 }
 
+/* --- Context list (home page) --- */
+
+.context-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.context-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 2px solid var(--secondary);
+  border-radius: 6px;
+  padding: 16px 20px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.context-card:hover {
+  background: var(--secondary);
+  color: #ffffff;
+}
+
+.context-card:hover .card-goal {
+  color: #ffffff;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card-goal {
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* --- Setup page --- */
 
 .setup-panels {
