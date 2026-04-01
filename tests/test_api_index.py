@@ -69,14 +69,14 @@ def test_get_index_empty_store_shows_no_contexts(empty_store_client: TestClient)
     response = empty_store_client.get("/")
 
     assert response.status_code == 200
-    assert "/ui/" not in response.text
+    assert "context-card" not in response.text
 
 
 def test_get_index_missing_store_dir_shows_no_contexts(missing_store_client: TestClient) -> None:
     response = missing_store_client.get("/")
 
     assert response.status_code == 200
-    assert "/ui/" not in response.text
+    assert "context-card" not in response.text
 
 
 def test_get_index_shows_context_goal(client: TestClient) -> None:
@@ -90,3 +90,15 @@ def test_get_index_missing_yaml_shows_placeholder(client: TestClient) -> None:
 
     # sql has no context.yaml — a placeholder should appear instead of the goal text
     assert "No goal set" in response.text
+
+
+def test_get_index_shows_new_context_widget(client: TestClient) -> None:
+    response = client.get("/")
+
+    assert 'id="new-context-widget"' in response.text
+
+
+def test_get_index_new_context_button_has_htmx_attributes(client: TestClient) -> None:
+    response = client.get("/")
+
+    assert 'hx-get="/ui/_new-context-form"' in response.text
