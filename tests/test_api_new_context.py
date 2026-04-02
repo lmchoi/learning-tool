@@ -79,3 +79,18 @@ def test_get_new_context_form_posts_to_correct_target(client: TestClient) -> Non
     response = client.get("/ui/_new-context-form")
 
     assert 'hx-post="/ui/contexts"' in response.text or 'action="/ui/contexts"' in response.text
+
+
+def test_get_new_context_form_preserves_widget_anchor(client: TestClient) -> None:
+    # The fragment must include id="new-context-widget" so the outerHTML swap
+    # doesn't remove the HTMX target from the DOM.
+    response = client.get("/ui/_new-context-form")
+
+    assert 'id="new-context-widget"' in response.text
+
+
+def test_post_contexts_error_response_preserves_widget_anchor(client: TestClient) -> None:
+    # Same requirement for the error re-render path.
+    response = client.post("/ui/contexts", data={"name": "NO"})
+
+    assert 'id="new-context-widget"' in response.text
