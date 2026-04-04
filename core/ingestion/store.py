@@ -24,6 +24,13 @@ class ContextStore:
             yaml.dump(metadata.model_dump(), default_flow_style=False)
         )
 
+    def archive_context(self, context: str) -> None:
+        meta = self.load_context(context)
+        if meta is None:
+            raise FileNotFoundError(f"No context found for '{context}'")
+        meta = meta.model_copy(update={"archived": True})
+        self.save_context(context, meta)
+
     def load_context(self, context: str) -> ContextMetadata | None:
         ctx_file = self.base_dir / context / "context.yaml"
         if not ctx_file.exists():
