@@ -1,0 +1,13 @@
+<div id="context-card-{{ ctx.name }}" class="context-card-wrapper">
+  <a class="context-card" href="/ui/{{ ctx.name | urlencode }}">
+    <span class="card-title">{{ ctx.name }}</span>
+    <span class="card-goal">{{ ctx.goal }}</span>
+  </a>
+  <div class="card-actions">
+    <a href="/ui/{{ ctx.name | urlencode }}/setup">edit</a>
+    <button hx-post="/ui/contexts/{{ ctx.name | urlencode }}/archive"
+            hx-target="#context-card-{{ ctx.name }}"
+            hx-swap="delete"
+            hx-confirm="Archive {{ ctx.name }}?">archive</button>
+  </div>
+</div>

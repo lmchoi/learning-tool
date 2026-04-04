@@ -1,27 +1,11 @@
 from collections.abc import Generator
-from contextlib import ExitStack
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 import yaml
 from fastapi.testclient import TestClient
 
-from api.main import app
-from core.ingestion.store import ContextStore
-
-
-def _make_client(store_dir: Path) -> Generator[TestClient]:
-    with ExitStack() as stack:
-        stack.enter_context(patch("api.main.SentenceTransformerEmbedder"))
-        stack.enter_context(patch("api.main.AsyncAnthropic"))
-        stack.enter_context(patch("api.main.genai"))
-        stack.enter_context(patch("api.main.SessionStore"))
-        stack.enter_context(patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}))
-        c = stack.enter_context(TestClient(app))
-        c.app.state.store_dir = store_dir  # type: ignore[attr-defined]
-        c.app.state.context_store = ContextStore(store_dir)  # type: ignore[attr-defined]
-        yield c
+from tests.conftest import make_api_client
 
 
 @pytest.fixture()
@@ -32,17 +16,17 @@ def client(tmp_path: Path) -> Generator[TestClient]:
         yaml.dump({"goal": "Master Python fundamentals", "focus_areas": []})
     )
     # sql has no context.yaml — exercises the missing-yaml path
-    yield from _make_client(tmp_path)
+    yield from make_api_client(tmp_path)
 
 
 @pytest.fixture()
 def empty_store_client(tmp_path: Path) -> Generator[TestClient]:
-    yield from _make_client(tmp_path)
+    yield from make_api_client(tmp_path)
 
 
 @pytest.fixture()
 def missing_store_client(tmp_path: Path) -> Generator[TestClient]:
-    yield from _make_client(tmp_path / "nonexistent")
+    yield from make_api_client(tmp_path / "nonexistent")
 
 
 def test_get_index_returns_200(client: TestClient) -> None:
@@ -116,7 +100,7 @@ def archived_store_client(tmp_path: Path) -> Generator[TestClient]:
     (tmp_path / "archived-ctx" / "context.yaml").write_text(
         yaml.dump({"goal": "archived goal", "focus_areas": [], "archived": True})
     )
-    yield from _make_client(tmp_path)
+    yield from make_api_client(tmp_path)
 
 
 def test_get_index_excludes_archived_contexts(archived_store_client: TestClient) -> None:

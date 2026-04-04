@@ -12,8 +12,9 @@ class UserProfile:
 
 
 class ContextMetadata(BaseModel):
-    goal: str
+    goal: Annotated[str, Field(min_length=1)]
     focus_areas: list[str]
+    archived: bool = False
 
 
 class Question(BaseModel):
