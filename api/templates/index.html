@@ -14,10 +14,7 @@
     {% if contexts %}
     <div class="context-list">
       {% for ctx in contexts %}
-      <a class="context-card" href="/ui/{{ ctx.name | urlencode }}">
-        <span class="card-title">{{ ctx.name }}</span>
-        <span class="card-goal">{% if ctx.goal %}{{ ctx.goal }}{% else %}No goal set{% endif %}</span>
-      </a>
+      {% include "_context_card.html" %}
       {% endfor %}
     </div>
     {% else %}

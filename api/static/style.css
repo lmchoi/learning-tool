@@ -265,7 +265,14 @@ button.thumb-down:hover {
   gap: 12px;
 }
 
+.context-card-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .context-card {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -274,6 +281,12 @@ button.thumb-down:hover {
   padding: 16px 20px;
   text-decoration: none;
   color: var(--text);
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .context-card:hover {

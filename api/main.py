@@ -140,6 +140,18 @@ async def get_new_context_form(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "_new_context_form.html")
 
 
+@app.post(
+    "/ui/contexts/{context_name}/archive", response_class=HTMLResponse, include_in_schema=False
+)
+async def post_archive_context(request: Request, context_name: str) -> Response:
+    context_store: ContextStore = request.app.state.context_store
+    try:
+        await asyncio.to_thread(context_store.archive_context, context_name)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return Response(status_code=200)
+
+
 @app.post("/ui/contexts", response_class=HTMLResponse, include_in_schema=False)
 async def post_contexts(request: Request, name: str = Form(...)) -> HTMLResponse:
     try:
