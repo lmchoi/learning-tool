@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import yaml
 
 from core.ingestion.store import ChunkStore, ContextStore
 from core.models import ContextMetadata
@@ -67,6 +68,30 @@ def test_load_missing_context_raises(tmp_path: Path) -> None:
     store = ChunkStore(tmp_path)
     with pytest.raises(FileNotFoundError):
         store.load("does-not-exist")
+
+
+def test_load_context_without_archived_field_defaults_to_false(tmp_path: Path) -> None:
+    store = ContextStore(tmp_path)
+    ctx_dir = tmp_path / "myctx"
+    ctx_dir.mkdir()
+    (ctx_dir / "context.yaml").write_text(yaml.dump({"goal": "some goal", "focus_areas": []}))
+
+    loaded = store.load_context("myctx")
+
+    assert loaded is not None
+    assert loaded.archived is False
+
+
+def test_archive_context_sets_archived_true(tmp_path: Path) -> None:
+    store = ContextStore(tmp_path)
+    metadata = ContextMetadata(goal="some goal", focus_areas=[])
+    store.save_context("ctx", metadata)
+
+    store.archive_context("ctx")
+    loaded = store.load_context("ctx")
+
+    assert loaded is not None
+    assert loaded.archived is True
 
 
 def test_different_contexts_are_isolated(tmp_path: Path) -> None:
