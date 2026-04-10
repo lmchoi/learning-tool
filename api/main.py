@@ -862,7 +862,7 @@ async def post_attempt(body: AttemptRequest) -> dict[str, int]:
         body.answer,
         body.score,
         body.question_id,
-        json.dumps(body.evaluation),
+        body.evaluation.model_dump_json(),
         focus_area=body.focus_area,
     )
     return {"attempt_id": attempt_id}

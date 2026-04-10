@@ -47,7 +47,14 @@ _VALID_PAYLOAD = {
     "question_id": "q-123",
     "question": "What is a cell?",
     "answer": "The smallest unit of life.",
-    "evaluation": {"score": 7, "strengths": ["correct"], "gaps": []},
+    "evaluation": {
+        "score": 7,
+        "strengths": ["correct"],
+        "gaps": [],
+        "missing_points": [],
+        "suggested_addition": None,
+        "follow_up_question": "Can you elaborate?",
+    },
     "score": 7,
 }
 
@@ -73,7 +80,14 @@ def test_post_attempt_records_to_session_store(client_ok: tuple[TestClient, Magi
     assert args[2] == "The smallest unit of life."
     assert args[3] == 7
     assert args[4] == "q-123"
-    assert args[5] == json.dumps({"score": 7, "strengths": ["correct"], "gaps": []})
+    assert json.loads(args[5]) == {
+        "score": 7,
+        "strengths": ["correct"],
+        "gaps": [],
+        "missing_points": [],
+        "suggested_addition": None,
+        "follow_up_question": "Can you elaborate?",
+    }
 
 
 def test_post_attempt_threads_focus_area(client_ok: tuple[TestClient, MagicMock]) -> None:
@@ -111,3 +125,26 @@ def test_post_attempt_404_context_not_found(
 
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
+
+
+def test_post_attempt_coerces_string_strengths_to_list(
+    client_ok: tuple[TestClient, MagicMock],
+) -> None:
+    client, mock_store = client_ok
+    payload = {
+        **_VALID_PAYLOAD,
+        "evaluation": {
+            "score": 7,
+            "strengths": "Good structure.",
+            "gaps": [],
+            "missing_points": [],
+            "suggested_addition": None,
+            "follow_up_question": "Can you elaborate?",
+        },
+    }
+    response = client.post("/api/attempts", json=payload)
+
+    assert response.status_code == 201
+    call_args = mock_store.record.call_args
+    stored = json.loads(call_args.args[5])
+    assert stored["strengths"] == ["Good structure."]
