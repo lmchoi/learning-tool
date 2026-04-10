@@ -537,6 +537,9 @@ async def get_session_results(request: Request, context_name: str, session_id: s
         if a.result_json:
             try:
                 result = json.loads(a.result_json)
+                for _f in ("strengths", "gaps", "missing_points"):
+                    if isinstance(result.get(_f), str):
+                        result[_f] = [result[_f]]
             except json.JSONDecodeError:
                 logger.warning("malformed result_json for attempt in session %s", session_id)
         attempts.append({"attempt": a, "result": result})
@@ -566,6 +569,9 @@ async def get_history(
             if a.result_json:
                 try:
                     result = json.loads(a.result_json)
+                    for _f in ("strengths", "gaps", "missing_points"):
+                        if isinstance(result.get(_f), str):
+                            result[_f] = [result[_f]]
                 except json.JSONDecodeError:
                     logger.warning("malformed result_json for attempt in session %s", s.session_id)
             attempts.append({"attempt": a, "result": result})

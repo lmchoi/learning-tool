@@ -139,6 +139,29 @@ def test_get_history_shows_evaluation_breakdown(client: TestClient) -> None:
     assert "Consider X." in response.text
 
 
+def test_get_history_coerces_string_fields_to_list(client: TestClient) -> None:
+    """Existing DB records may have string values for list fields — coerce on load."""
+    app.state.session_stores = {}
+    app.state.session_stores["my-context"] = MagicMock()
+    result = {
+        "score": 7,
+        "strengths": "Good structure.",
+        "gaps": "Missing context.",
+        "missing_points": "Edge case",
+        "suggested_addition": None,
+        "follow_up_question": None,
+    }
+    app.state.session_stores["my-context"].load_sessions.return_value = [
+        _session([_attempt(result=result)])
+    ]
+
+    response = client.get("/ui/my-context/history")
+
+    assert "Good structure." in response.text
+    assert "Missing context." in response.text
+    assert "Edge case" in response.text
+
+
 def test_get_history_malformed_result_json_falls_back_to_none(client: TestClient) -> None:
     app.state.session_stores = {}
     app.state.session_stores["my-context"] = MagicMock()
