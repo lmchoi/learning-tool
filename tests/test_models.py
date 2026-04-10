@@ -56,3 +56,17 @@ def test_evaluation_result_coerces_string_missing_points_to_list() -> None:
         follow_up_question="What did you miss?",
     )
     assert result.missing_points == ["Definition omitted."]
+
+
+def test_evaluation_result_coerces_empty_string_to_empty_list() -> None:
+    result = EvaluationResult(
+        score=6,
+        strengths="",  # type: ignore[arg-type]
+        gaps="",  # type: ignore[arg-type]
+        missing_points="",  # type: ignore[arg-type]
+        suggested_addition=None,
+        follow_up_question="Anything else?",
+    )
+    assert result.strengths == []
+    assert result.gaps == []
+    assert result.missing_points == []

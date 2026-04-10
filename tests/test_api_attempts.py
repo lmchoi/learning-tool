@@ -41,6 +41,8 @@ def client_no_context() -> Generator[tuple[TestClient, MagicMock]]:
     yield from _make_client(mock_store, store_exists=False)
 
 
+# Fully-populated EvaluationResult — all fields required now that
+# AttemptRequest.evaluation is typed as EvaluationResult, not dict[str, object].
 _VALID_PAYLOAD = {
     "context": "biology",
     "session_id": "sess-abc",
@@ -80,6 +82,7 @@ def test_post_attempt_records_to_session_store(client_ok: tuple[TestClient, Magi
     assert args[2] == "The smallest unit of life."
     assert args[3] == 7
     assert args[4] == "q-123"
+    # model_dump_json() field order is not guaranteed — parse and compare as dict.
     assert json.loads(args[5]) == {
         "score": 7,
         "strengths": ["correct"],

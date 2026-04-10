@@ -34,7 +34,9 @@ class EvaluationResult(BaseModel):
     @classmethod
     def coerce_str_to_list(cls, v: object) -> object:
         if isinstance(v, str):
-            return [v]
+            # Empty string means "nothing here" — treat as empty list so the
+            # template doesn't render a single empty <li>.
+            return [v] if v else []
         return v
 
 
