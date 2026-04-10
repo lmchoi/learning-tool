@@ -3,7 +3,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 @dataclass
@@ -29,6 +29,13 @@ class EvaluationResult(BaseModel):
     missing_points: list[str]
     suggested_addition: str | None
     follow_up_question: str
+
+    @field_validator("strengths", "gaps", "missing_points", mode="before")
+    @classmethod
+    def coerce_str_to_list(cls, v: object) -> object:
+        if isinstance(v, str):
+            return [v]
+        return v
 
 
 @dataclass

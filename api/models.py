@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from core.models import EvaluationResult
+
 
 class QuestionResponse(BaseModel):
     text: str
@@ -27,7 +29,7 @@ class AttemptRequest(BaseModel):
     question_id: str
     question: str
     answer: str
-    evaluation: dict[str, object]
+    evaluation: EvaluationResult
     score: int
     focus_area: str | None = None
 
