@@ -16,6 +16,17 @@ def test_question_attempt_fields() -> None:
     assert attempt.timestamp == "2026-03-21T10:00:00"
 
 
+def test_question_attempt_score_can_be_none() -> None:
+    attempt = QuestionAttempt(
+        session_id="s1",
+        question_text="What is X?",
+        answer_text="It is Y.",
+        score=None,
+        timestamp="2026-04-11T10:00:00",
+    )
+    assert attempt.score is None
+
+
 def test_session_record_fields() -> None:
     attempt = QuestionAttempt(
         session_id="s1",

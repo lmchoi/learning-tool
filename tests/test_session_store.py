@@ -510,6 +510,70 @@ def test_existing_db_migrates_to_add_focus_area(tmp_path: Path) -> None:
     assert "focus_area" in cols
 
 
+def test_record_round_trip_with_none_score(tmp_path: Path) -> None:
+    """Attempt recorded with score=None loads back with score=None."""
+    store = SessionStore(tmp_path, "ctx")
+    session_id = store.start_session()
+    store.record(session_id, "What is X?", "It is Y.", None)
+
+    sessions = store.load_sessions()
+
+    assert sessions[0].attempts[0].score is None
+
+
+def test_fresh_db_score_column_is_nullable(tmp_path: Path) -> None:
+    """Fresh DB created via migrations has score column as nullable on attempts table."""
+    SessionStore(tmp_path, "ctx")
+
+    db_path = tmp_path / "ctx" / "sessions.db"
+    with sqlite3.connect(db_path) as conn:
+        # PRAGMA table_info row: (cid, name, type, notnull, dflt_value, pk)
+        # notnull=0 means the column is nullable
+        cols = {row[1]: row[3] for row in conn.execute("PRAGMA table_info(attempts)").fetchall()}
+
+    assert cols["score"] == 0
+
+
+def test_existing_db_migrates_score_to_nullable(tmp_path: Path) -> None:
+    """Existing DB with score NOT NULL gets score column made nullable via migration."""
+    ctx_dir = tmp_path / "ctx"
+    ctx_dir.mkdir()
+    db_path = ctx_dir / "sessions.db"
+
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            "CREATE TABLE sessions"
+            " (session_id TEXT PRIMARY KEY, context TEXT NOT NULL, started_at TEXT NOT NULL);"
+            "CREATE TABLE attempts"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,"
+            " question_id TEXT, question_text TEXT NOT NULL, answer_text TEXT NOT NULL,"
+            " score INTEGER NOT NULL, result_json TEXT, timestamp TEXT NOT NULL,"
+            " focus_area TEXT);"
+            "CREATE TABLE chunks"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            " attempt_id INTEGER NOT NULL REFERENCES attempts(id),"
+            " chunk_text TEXT NOT NULL, score REAL);"
+            "CREATE TABLE annotations"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, attempt_id INTEGER REFERENCES attempts(id),"
+            " question_id TEXT, target_type TEXT NOT NULL, sentiment TEXT NOT NULL,"
+            " comment TEXT, created_at TEXT NOT NULL, flagged_at TEXT,"
+            " UNIQUE(question_id, target_type));"
+            "CREATE TABLE alembic_version"
+            " (version_num VARCHAR(32) NOT NULL CONSTRAINT alembic_version_pkc PRIMARY KEY);"
+            "INSERT INTO alembic_version VALUES ('d9c3a7b15e62');"
+            "INSERT INTO sessions VALUES ('s1', 'ctx', '2024-01-01T00:00:00+00:00');"
+            "INSERT INTO attempts"
+            " VALUES (1, 's1', 'qid-1', 'Q?', 'A.', 5, NULL, '2024-01-01T00:00:00+00:00', NULL);"
+        )
+
+    SessionStore(tmp_path, "ctx")
+
+    with sqlite3.connect(db_path) as conn:
+        cols = {row[1]: row[3] for row in conn.execute("PRAGMA table_info(attempts)").fetchall()}
+
+    assert cols["score"] == 0  # nullable after migration
+
+
 def test_load_annotations_flagged_and_sentiment_combined(tmp_path: Path) -> None:
     store = SessionStore(tmp_path, "ctx")
     store.start_session()

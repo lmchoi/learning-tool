@@ -6,7 +6,7 @@ class QuestionAttempt:
     session_id: str
     question_text: str
     answer_text: str
-    score: int
+    score: int | None
     timestamp: str
     question_id: str | None = None
     result_json: str | None = None
