@@ -115,3 +115,13 @@ def test_get_bank_question_fragment_generate_button_links_to_generation_endpoint
     )
 
     assert "/ui/myctx/question" in response.text
+
+
+def test_get_bank_question_fragment_form_posts_to_submit(
+    client_with_question: TestClient,
+) -> None:
+    response = client_with_question.get(
+        "/ui/myctx/question/bank?focus_area=Agent+Development&session_id=sess-1"
+    )
+
+    assert "/ui/myctx/submit" in response.text
