@@ -17,7 +17,7 @@ def _make_client(
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.main.Retriever"),
-        patch("learning_tool.api.main.QuestionBankStore", return_value=mock_bank_store),
+        patch("learning_tool.api.deps.QuestionBankStore", return_value=mock_bank_store),
         patch("learning_tool.api.main.Path.exists", mock_exists),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,

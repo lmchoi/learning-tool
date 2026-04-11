@@ -15,7 +15,7 @@ def make_api_client(store_dir: Path) -> Generator[TestClient]:
         stack.enter_context(patch("learning_tool.api.main.SentenceTransformerEmbedder"))
         stack.enter_context(patch("learning_tool.api.main.AsyncAnthropic"))
         stack.enter_context(patch("learning_tool.api.main.genai"))
-        stack.enter_context(patch("learning_tool.api.main.SessionStore"))
+        stack.enter_context(patch("learning_tool.api.deps.SessionStore"))
         stack.enter_context(patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}))
         c = stack.enter_context(TestClient(app))
         c.app.state.store_dir = store_dir  # type: ignore[attr-defined]

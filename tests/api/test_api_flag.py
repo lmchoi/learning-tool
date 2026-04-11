@@ -36,7 +36,7 @@ def client(tmp_path: Path, mock_session_store: MagicMock) -> Generator[TestClien
         patch("learning_tool.api.main.SentenceTransformerEmbedder"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
-        patch("learning_tool.api.main.SessionStore", return_value=mock_session_store),
+        patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
