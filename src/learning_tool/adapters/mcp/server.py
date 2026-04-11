@@ -13,7 +13,7 @@ import uuid
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-from core.settings import BASE_URL
+from learning_tool.core.settings import BASE_URL
 
 mcp = FastMCP("learning-tool")
 

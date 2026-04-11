@@ -1,6 +1,6 @@
 import numpy as np
 
-from core.ingestion.embedder import Embedder, FakeEmbedder
+from learning_tool.core.ingestion.embedder import Embedder, FakeEmbedder
 
 
 def test_fake_embedder_returns_array_per_chunk() -> None:

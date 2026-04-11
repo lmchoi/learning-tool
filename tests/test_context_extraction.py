@@ -1,7 +1,7 @@
 import pytest
 
-from core.ingestion.context import extract_context
-from core.models import ContextMetadata
+from learning_tool.core.ingestion.context import extract_context
+from learning_tool.core.models import ContextMetadata
 from tests.fakes import FakeAnthropicClient
 
 

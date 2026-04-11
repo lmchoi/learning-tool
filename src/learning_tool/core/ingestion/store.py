@@ -6,7 +6,7 @@ import numpy as np
 import yaml
 from numpy.typing import NDArray
 
-from core.models import ContextMetadata
+from learning_tool.core.models import ContextMetadata
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from core.models import ContextMetadata, UserProfile
-from core.session.models import QuestionAttempt
+from learning_tool.core.models import ContextMetadata, UserProfile
+from learning_tool.core.session.models import QuestionAttempt
 
 _TEMPLATE = (Path(__file__).parent / "export_evaluation_prompt.md").read_text()
 

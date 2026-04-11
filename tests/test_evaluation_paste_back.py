@@ -1,5 +1,5 @@
-from core.evaluation.paste_back import parse_paste_back
-from core.models import EvaluationResult
+from learning_tool.core.evaluation.paste_back import parse_paste_back
+from learning_tool.core.models import EvaluationResult
 
 
 def test_parse_paste_back_well_formed() -> None:

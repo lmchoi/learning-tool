@@ -1,7 +1,7 @@
 import pytest
 
-from core.models import Question
-from core.question.generate_gemini import generate_question_gemini
+from learning_tool.core.models import Question
+from learning_tool.core.question.generate_gemini import generate_question_gemini
 from tests.fakes import FakeGeminiClient
 
 

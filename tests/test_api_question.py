@@ -4,22 +4,22 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
-from core.models import Question
+from learning_tool.api.main import app
+from learning_tool.core.models import Question
 
 
 @pytest.fixture()
 def mock_retriever() -> Generator[MagicMock]:
-    with patch("api.main.Retriever") as mock_cls:
+    with patch("learning_tool.api.main.Retriever") as mock_cls:
         yield mock_cls.return_value
 
 
 @pytest.fixture()
 def client(mock_retriever: MagicMock) -> Generator[TestClient]:
     with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
+        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.AsyncAnthropic"),
+        patch("learning_tool.api.main.genai"),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
@@ -29,7 +29,9 @@ def client(mock_retriever: MagicMock) -> Generator[TestClient]:
 def test_get_question_returns_200(client: TestClient, mock_retriever: MagicMock) -> None:
     question = Question(text="What is the capital of France?")
     mock_retriever.retrieve.return_value = [("chunk one", 0.9), ("chunk two", 0.8)]
-    with patch("api.main.generate_question_gemini", new=AsyncMock(return_value=question)):
+    with patch(
+        "learning_tool.api.main.generate_question_gemini", new=AsyncMock(return_value=question)
+    ):
         response = client.get("/contexts/geography/question?query=capitals")
 
     assert response.status_code == 200

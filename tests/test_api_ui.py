@@ -5,14 +5,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import _get_session_store, app
-from core.models import ContextMetadata, EvaluationResult, Question
-from core.session.store import SessionStore
+from learning_tool.api.main import _get_session_store, app
+from learning_tool.core.models import ContextMetadata, EvaluationResult, Question
+from learning_tool.core.session.store import SessionStore
 
 
 @pytest.fixture()
 def mock_retriever() -> Generator[MagicMock]:
-    with patch("api.main.Retriever") as mock_cls:
+    with patch("learning_tool.api.main.Retriever") as mock_cls:
         yield mock_cls.return_value
 
 
@@ -21,10 +21,10 @@ def client(mock_retriever: MagicMock) -> Generator[TestClient]:
     mock_session_store = MagicMock()
     mock_session_store.start_session.return_value = "test-session-id"
     with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.SessionStore", return_value=mock_session_store),
+        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.AsyncAnthropic"),
+        patch("learning_tool.api.main.genai"),
+        patch("learning_tool.api.main.SessionStore", return_value=mock_session_store),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
@@ -101,7 +101,8 @@ def test_get_ui_without_query_returns_404_for_missing_context(client: TestClient
 def test_get_question_fragment_returns_200(client: TestClient, mock_retriever: MagicMock) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
     with patch(
-        "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
+        "learning_tool.api.main.generate_question_gemini",
+        new=AsyncMock(return_value=Question(text="What is X?")),
     ):
         response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
@@ -114,7 +115,8 @@ def test_get_question_fragment_contains_question_id(
 ) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
     with patch(
-        "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
+        "learning_tool.api.main.generate_question_gemini",
+        new=AsyncMock(return_value=Question(text="What is X?")),
     ):
         response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
@@ -126,7 +128,8 @@ def test_get_question_fragment_contains_question_text(
 ) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
     with patch(
-        "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
+        "learning_tool.api.main.generate_question_gemini",
+        new=AsyncMock(return_value=Question(text="What is X?")),
     ):
         response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
@@ -138,7 +141,8 @@ def test_get_question_fragment_contains_answer_form(
 ) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
     with patch(
-        "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
+        "learning_tool.api.main.generate_question_gemini",
+        new=AsyncMock(return_value=Question(text="What is X?")),
     ):
         response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
@@ -151,7 +155,8 @@ def test_get_question_fragment_form_posts_to_evaluate(
 ) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
     with patch(
-        "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
+        "learning_tool.api.main.generate_question_gemini",
+        new=AsyncMock(return_value=Question(text="What is X?")),
     ):
         response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
@@ -163,7 +168,8 @@ def test_get_question_fragment_passes_query_to_form(
 ) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
     with patch(
-        "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
+        "learning_tool.api.main.generate_question_gemini",
+        new=AsyncMock(return_value=Question(text="What is X?")),
     ):
         response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
 
@@ -173,7 +179,7 @@ def test_get_question_fragment_passes_query_to_form(
 
 def test_post_evaluate_fragment_returns_200(client: TestClient, mock_retriever: MagicMock) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
-    with patch("api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
+    with patch("learning_tool.api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
         response = client.post(
             "/ui/my-context/evaluate",
             data={
@@ -192,7 +198,7 @@ def test_post_evaluate_fragment_contains_score(
     client: TestClient, mock_retriever: MagicMock
 ) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
-    with patch("api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
+    with patch("learning_tool.api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
         response = client.post(
             "/ui/my-context/evaluate",
             data={
@@ -212,7 +218,7 @@ def test_post_evaluate_fragment_uses_query_for_retrieval(
     client: TestClient, mock_retriever: MagicMock
 ) -> None:
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
-    with patch("api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
+    with patch("learning_tool.api.main.evaluate_answer", new=AsyncMock(return_value=EVALUATION)):
         client.post(
             "/ui/my-context/evaluate",
             data={

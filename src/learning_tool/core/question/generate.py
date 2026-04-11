@@ -1,8 +1,8 @@
 from typing import cast
 
-from core.llm.constants import QUESTION_GENERATION_MODEL
-from core.llm.protocols import AnthropicClient
-from core.models import Question
+from learning_tool.core.llm.constants import QUESTION_GENERATION_MODEL
+from learning_tool.core.llm.protocols import AnthropicClient
+from learning_tool.core.models import Question
 
 
 # Kept as the Anthropic-side concrete implementation alongside generate_gemini.py.

@@ -32,8 +32,8 @@ command. To trigger migration for a specific context without a real request:
 
 ```bash
 uv run python -c "
-from core.session.store import SessionStore
-from core.settings import STORE_DIR
+from learning_tool.core.session.store import SessionStore
+from learning_tool.core.settings import STORE_DIR
 SessionStore(STORE_DIR, '<context>')
 "
 ```

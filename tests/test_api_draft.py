@@ -6,15 +6,15 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
-from core.context_import.draft_store import DraftStore
+from learning_tool.api.main import app
+from learning_tool.core.context_import.draft_store import DraftStore
 
 
 def _make_client(store_dir: Path) -> Generator[TestClient]:
     with ExitStack() as stack:
-        stack.enter_context(patch("api.main.SentenceTransformerEmbedder"))
-        stack.enter_context(patch("api.main.AsyncAnthropic"))
-        stack.enter_context(patch("api.main.genai"))
+        stack.enter_context(patch("learning_tool.api.main.SentenceTransformerEmbedder"))
+        stack.enter_context(patch("learning_tool.api.main.AsyncAnthropic"))
+        stack.enter_context(patch("learning_tool.api.main.genai"))
         stack.enter_context(patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}))
         c = TestClient(app)
         c.app.state.store_dir = store_dir  # type: ignore[attr-defined]

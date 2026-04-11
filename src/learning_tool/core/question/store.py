@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-from core.models import BankQuestion
+from learning_tool.core.models import BankQuestion
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS bank_questions (

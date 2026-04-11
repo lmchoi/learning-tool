@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from core.models import EvaluationResult
+from learning_tool.core.models import EvaluationResult
 
 
 class QuestionResponse(BaseModel):

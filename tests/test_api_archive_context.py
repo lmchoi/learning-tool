@@ -5,7 +5,7 @@ import pytest
 import yaml
 from fastapi.testclient import TestClient
 
-from core.ingestion.store import ContextStore
+from learning_tool.core.ingestion.store import ContextStore
 from tests.conftest import make_api_client
 
 

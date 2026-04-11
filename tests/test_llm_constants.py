@@ -5,7 +5,7 @@ import pytest
 
 
 def reload_constants() -> types.ModuleType:
-    import core.llm.constants as m
+    import learning_tool.core.llm.constants as m
 
     importlib.reload(m)
     return m

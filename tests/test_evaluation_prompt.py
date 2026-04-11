@@ -1,5 +1,5 @@
-from core.evaluation.prompt import build_evaluation_prompt
-from core.models import ContextMetadata, UserProfile
+from learning_tool.core.evaluation.prompt import build_evaluation_prompt
+from learning_tool.core.models import ContextMetadata, UserProfile
 
 
 def test_prompt_contains_goal() -> None:

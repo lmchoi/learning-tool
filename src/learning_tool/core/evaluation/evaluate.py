@@ -1,8 +1,8 @@
 from typing import cast
 
-from core.llm.constants import ANSWER_EVALUATION_MODEL
-from core.llm.protocols import AnthropicClient
-from core.models import EvaluationResult
+from learning_tool.core.llm.constants import ANSWER_EVALUATION_MODEL
+from learning_tool.core.llm.protocols import AnthropicClient
+from learning_tool.core.models import EvaluationResult
 
 
 async def evaluate_answer(prompt: str, client: AnthropicClient) -> EvaluationResult:

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from core.ingestion.sources import load_sources, walk_source_dir
+from learning_tool.core.ingestion.sources import load_sources, walk_source_dir
 
 
 def test_walk_source_dir_finds_supported_types(tmp_path: Path) -> None:

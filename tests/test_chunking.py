@@ -1,4 +1,4 @@
-from core.ingestion.chunker import chunk_document
+from learning_tool.core.ingestion.chunker import chunk_document
 
 
 def test_empty_document_returns_no_chunks() -> None:

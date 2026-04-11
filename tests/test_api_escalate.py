@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
+from learning_tool.api.main import app
 
 _ANNOTATION = {
     "id": 1,
@@ -35,13 +35,13 @@ def mock_session_store() -> MagicMock:
 @pytest.fixture()
 def client_with_github(tmp_path: Path, mock_session_store: MagicMock) -> Generator[TestClient]:
     with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.SessionStore", return_value=mock_session_store),
-        patch("api.main._GITHUB_CONFIGURED", True),
-        patch("api.main.GITHUB_TOKEN", "fake-token"),
-        patch("api.main.GITHUB_REPO", "owner/repo"),
+        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.AsyncAnthropic"),
+        patch("learning_tool.api.main.genai"),
+        patch("learning_tool.api.main.SessionStore", return_value=mock_session_store),
+        patch("learning_tool.api.main._GITHUB_CONFIGURED", True),
+        patch("learning_tool.api.main.GITHUB_TOKEN", "fake-token"),
+        patch("learning_tool.api.main.GITHUB_REPO", "owner/repo"),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
@@ -52,11 +52,11 @@ def client_with_github(tmp_path: Path, mock_session_store: MagicMock) -> Generat
 @pytest.fixture()
 def client_no_github(tmp_path: Path, mock_session_store: MagicMock) -> Generator[TestClient]:
     with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.SessionStore", return_value=mock_session_store),
-        patch("api.main._GITHUB_CONFIGURED", False),
+        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.AsyncAnthropic"),
+        patch("learning_tool.api.main.genai"),
+        patch("learning_tool.api.main.SessionStore", return_value=mock_session_store),
+        patch("learning_tool.api.main._GITHUB_CONFIGURED", False),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):

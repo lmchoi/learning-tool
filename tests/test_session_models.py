@@ -1,4 +1,4 @@
-from core.session.models import QuestionAttempt, SessionRecord
+from learning_tool.core.session.models import QuestionAttempt, SessionRecord
 
 
 def test_question_attempt_fields() -> None:

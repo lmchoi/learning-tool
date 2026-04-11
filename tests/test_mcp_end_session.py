@@ -1,6 +1,6 @@
 import pytest
 
-from adapters.mcp.server import end_session, session_id
+from learning_tool.adapters.mcp.server import end_session, session_id
 
 
 @pytest.mark.asyncio

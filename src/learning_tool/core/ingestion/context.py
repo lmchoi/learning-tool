@@ -1,8 +1,8 @@
 import logging
 
-from core.llm.constants import CONTEXT_EXTRACTION_MODEL
-from core.llm.protocols import AnthropicClient
-from core.models import ContextMetadata
+from learning_tool.core.llm.constants import CONTEXT_EXTRACTION_MODEL
+from learning_tool.core.llm.protocols import AnthropicClient
+from learning_tool.core.models import ContextMetadata
 
 logger = logging.getLogger(__name__)
 

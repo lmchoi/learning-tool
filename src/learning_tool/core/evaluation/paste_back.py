@@ -2,7 +2,7 @@ import json
 import logging
 import re
 
-from core.models import EvaluationResult
+from learning_tool.core.models import EvaluationResult
 
 logger = logging.getLogger(__name__)
 

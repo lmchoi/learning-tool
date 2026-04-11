@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from core.rag.similarity import cosine_similarity, top_k
+from learning_tool.core.rag.similarity import cosine_similarity, top_k
 
 
 def test_identical_vectors_score_one() -> None:

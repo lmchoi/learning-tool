@@ -2,7 +2,7 @@ from typing import Any, Protocol, cast
 
 from google.genai import types
 
-from core.models import Question
+from learning_tool.core.models import Question
 
 MODEL = "gemini-2.5-flash"
 
