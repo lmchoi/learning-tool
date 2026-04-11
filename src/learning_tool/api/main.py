@@ -42,14 +42,13 @@ from learning_tool.core.question.store import QuestionBankStore
 from learning_tool.core.rag.retriever import Retriever
 from learning_tool.core.session.store import SessionStore
 from learning_tool.core.settings import GITHUB_REPO, GITHUB_TOKEN, LOG_LEVEL, STORE_DIR
+from learning_tool.resources import PROMPTS_DIR
 
 logger = logging.getLogger(__name__)
 
 _GITHUB_CONFIGURED = bool(GITHUB_TOKEN and GITHUB_REPO)
 _IMPORT_PROMPT: str | None = None
-_IMPORT_PROMPT_PATH = (
-    Path(__file__).parent.parent / "resources" / "prompts" / "context_import_prompt.md"
-)
+_IMPORT_PROMPT_PATH = PROMPTS_DIR / "context_import_prompt.md"
 
 
 def _get_import_prompt() -> str:
