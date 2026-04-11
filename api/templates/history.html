@@ -30,9 +30,10 @@
         {{ row.session.started_at[:10] }}
         &nbsp;·&nbsp;
         {{ row.attempts | length }} question{{ 's' if row.attempts | length != 1 else '' }}
-        {% if row.attempts %}
+        {% set scored = row.attempts | map(attribute='attempt') | map(attribute='score') | reject('none') | list %}
+        {% if scored %}
         &nbsp;·&nbsp;
-        avg {{ (row.attempts | map(attribute='attempt') | map(attribute='score') | sum / row.attempts | length) | round(1) }}/10
+        avg {{ (scored | sum / scored | length) | round(1) }}/10
         {% endif %}
       </p>
 
@@ -40,7 +41,11 @@
       <div class="attempt-card">
         <p class="attempt-question">{{ item.attempt.question_text }}</p>
         <p class="attempt-answer muted">{{ item.attempt.answer_text }}</p>
+        {% if item.attempt.score is not none %}
         <p class="score">{{ item.attempt.score }}/10</p>
+        {% else %}
+        <p class="score muted">pending</p>
+        {% endif %}
 
         {% if item.result %}
         {% if item.result.strengths %}
