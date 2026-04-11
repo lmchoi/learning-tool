@@ -7,22 +7,22 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
-from core.models import BankQuestion, ContextMetadata
-from core.session.models import QuestionAttempt, SessionRecord
-from core.session.store import SessionStore
+from learning_tool.api.main import app
+from learning_tool.core.models import BankQuestion, ContextMetadata
+from learning_tool.core.session.models import QuestionAttempt, SessionRecord
+from learning_tool.core.session.store import SessionStore
 
 
 def _make_client(
     mock_bank_store: MagicMock, mock_session_store: MagicMock
 ) -> Generator[TestClient]:
     with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.Retriever"),
-        patch("api.main.QuestionBankStore", return_value=mock_bank_store),
-        patch("api.main.SessionStore", return_value=mock_session_store),
+        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.AsyncAnthropic"),
+        patch("learning_tool.api.main.genai"),
+        patch("learning_tool.api.main.Retriever"),
+        patch("learning_tool.api.main.QuestionBankStore", return_value=mock_bank_store),
+        patch("learning_tool.api.main.SessionStore", return_value=mock_session_store),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
@@ -275,8 +275,8 @@ def test_get_capture_export_contains_paste_back_form(tmp_path: Path) -> None:
     # Mock lifespan and override store_dir
     lifespan_mock = asynccontextmanager(lambda _: _mock_async_gen(None))
     with (
-        patch("api.main.app.router.lifespan_context", lifespan_mock),
-        patch("api.main.STORE_DIR", tmp_path),
+        patch("learning_tool.api.main.app.router.lifespan_context", lifespan_mock),
+        patch("learning_tool.api.main.STORE_DIR", tmp_path),
         TestClient(app) as client,
     ):
         # Cast to Any to satisfy mypy for state access on TestClient app

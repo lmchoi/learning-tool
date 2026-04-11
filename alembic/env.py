@@ -15,7 +15,7 @@ def get_url() -> str:
     if url:
         return url
     # Fallback for CLI use without a context-specific DB path
-    from core.settings import STORE_DIR
+    from learning_tool.core.settings import STORE_DIR
 
     raise RuntimeError(
         f"sqlalchemy.url not set. For CLI use, specify a context DB path. STORE_DIR is {STORE_DIR}"

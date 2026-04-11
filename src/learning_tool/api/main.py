@@ -17,7 +17,7 @@ from google import genai
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from api.models import (
+from learning_tool.api.models import (
     AttemptRequest,
     DraftRequest,
     DraftResponse,
@@ -25,23 +25,23 @@ from api.models import (
     EvaluationResponse,
     QuestionResponse,
 )
-from core.context_import.draft_store import DraftStore
-from core.context_import.parser import ImportedContext, parse_import
-from core.context_name import validate_context_name
-from core.evaluation.evaluate import evaluate_answer
-from core.evaluation.export_prompt import build_export_prompt
-from core.evaluation.paste_back import parse_paste_back
-from core.evaluation.prompt import build_evaluation_prompt
-from core.ingestion.embedder import SentenceTransformerEmbedder
-from core.ingestion.store import ChunkStore, ContextStore
-from core.models import ContextMetadata, UserProfile
-from core.question.generate_gemini import generate_question_gemini
-from core.question.loader import load_questions
-from core.question.prompt import build_question_prompt
-from core.question.store import QuestionBankStore
-from core.rag.retriever import Retriever
-from core.session.store import SessionStore
-from core.settings import GITHUB_REPO, GITHUB_TOKEN, LOG_LEVEL, STORE_DIR
+from learning_tool.core.context_import.draft_store import DraftStore
+from learning_tool.core.context_import.parser import ImportedContext, parse_import
+from learning_tool.core.context_name import validate_context_name
+from learning_tool.core.evaluation.evaluate import evaluate_answer
+from learning_tool.core.evaluation.export_prompt import build_export_prompt
+from learning_tool.core.evaluation.paste_back import parse_paste_back
+from learning_tool.core.evaluation.prompt import build_evaluation_prompt
+from learning_tool.core.ingestion.embedder import SentenceTransformerEmbedder
+from learning_tool.core.ingestion.store import ChunkStore, ContextStore
+from learning_tool.core.models import ContextMetadata, UserProfile
+from learning_tool.core.question.generate_gemini import generate_question_gemini
+from learning_tool.core.question.loader import load_questions
+from learning_tool.core.question.prompt import build_question_prompt
+from learning_tool.core.question.store import QuestionBankStore
+from learning_tool.core.rag.retriever import Retriever
+from learning_tool.core.session.store import SessionStore
+from learning_tool.core.settings import GITHUB_REPO, GITHUB_TOKEN, LOG_LEVEL, STORE_DIR
 
 logger = logging.getLogger(__name__)
 

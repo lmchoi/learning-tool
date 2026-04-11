@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from core.session.store import SessionStore
+from learning_tool.core.session.store import SessionStore
 
 
 def test_start_session_returns_id_and_persists(tmp_path: Path) -> None:

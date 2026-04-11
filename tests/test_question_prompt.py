@@ -1,5 +1,5 @@
-from core.models import ContextMetadata, UserProfile
-from core.question.prompt import build_question_prompt
+from learning_tool.core.models import ContextMetadata, UserProfile
+from learning_tool.core.question.prompt import build_question_prompt
 
 
 def test_prompt_contains_goal() -> None:

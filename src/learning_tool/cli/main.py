@@ -5,22 +5,22 @@ from pathlib import Path
 import typer
 from anthropic import AsyncAnthropic
 
-from core.evaluation.evaluate import evaluate_answer
-from core.evaluation.prompt import build_evaluation_prompt
-from core.ingestion.context import extract_context
-from core.ingestion.embedder import SentenceTransformerEmbedder
-from core.ingestion.ingest import ingest
-from core.ingestion.sources import walk_source_dir
-from core.ingestion.store import ChunkStore, ContextStore
-from core.models import UserProfile
-from core.question.generate import generate_question
-from core.question.loader import load_questions
-from core.question.prompt import build_question_prompt
-from core.question.store import QuestionBankStore
-from core.rag.retriever import Retriever
-from core.session.store import SessionStore
-from core.settings import LOG_LEVEL
-from core.settings import STORE_DIR as DEFAULT_STORE
+from learning_tool.core.evaluation.evaluate import evaluate_answer
+from learning_tool.core.evaluation.prompt import build_evaluation_prompt
+from learning_tool.core.ingestion.context import extract_context
+from learning_tool.core.ingestion.embedder import SentenceTransformerEmbedder
+from learning_tool.core.ingestion.ingest import ingest
+from learning_tool.core.ingestion.sources import walk_source_dir
+from learning_tool.core.ingestion.store import ChunkStore, ContextStore
+from learning_tool.core.models import UserProfile
+from learning_tool.core.question.generate import generate_question
+from learning_tool.core.question.loader import load_questions
+from learning_tool.core.question.prompt import build_question_prompt
+from learning_tool.core.question.store import QuestionBankStore
+from learning_tool.core.rag.retriever import Retriever
+from learning_tool.core.session.store import SessionStore
+from learning_tool.core.settings import LOG_LEVEL
+from learning_tool.core.settings import STORE_DIR as DEFAULT_STORE
 
 logger = logging.getLogger(__name__)
 

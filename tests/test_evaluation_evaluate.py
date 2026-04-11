@@ -1,7 +1,7 @@
 import pytest
 
-from core.evaluation.evaluate import evaluate_answer
-from core.models import EvaluationResult
+from learning_tool.core.evaluation.evaluate import evaluate_answer
+from learning_tool.core.models import EvaluationResult
 from tests.fakes import FakeAnthropicClient
 
 

@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 import yaml
 
-from core.ingestion.store import ChunkStore, ContextStore
-from core.models import ContextMetadata
+from learning_tool.core.ingestion.store import ChunkStore, ContextStore
+from learning_tool.core.models import ContextMetadata
 
 
 def test_context_store_round_trip(tmp_path: Path) -> None:

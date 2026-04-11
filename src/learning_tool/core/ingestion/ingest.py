@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pypdf
 
-from core.ingestion.chunker import chunk_document
-from core.ingestion.embedder import Embedder
-from core.ingestion.store import ChunkStore
+from learning_tool.core.ingestion.chunker import chunk_document
+from learning_tool.core.ingestion.embedder import Embedder
+from learning_tool.core.ingestion.store import ChunkStore
 
 logger = logging.getLogger(__name__)
 

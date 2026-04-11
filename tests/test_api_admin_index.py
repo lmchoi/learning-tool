@@ -5,16 +5,16 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
+from learning_tool.api.main import app
 
 
 @pytest.fixture()
 def client(tmp_path: Path) -> Generator[TestClient]:
     with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.SessionStore"),
+        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.AsyncAnthropic"),
+        patch("learning_tool.api.main.genai"),
+        patch("learning_tool.api.main.SessionStore"),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):

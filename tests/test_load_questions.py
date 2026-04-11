@@ -4,10 +4,10 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from cli.main import app
-from core.models import BankQuestion
-from core.question.loader import load_questions
-from core.question.store import QuestionBankStore
+from learning_tool.cli.main import app
+from learning_tool.core.models import BankQuestion
+from learning_tool.core.question.loader import load_questions
+from learning_tool.core.question.store import QuestionBankStore
 
 runner = CliRunner()
 

@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from core.ingestion.embedder import FakeEmbedder
-from core.ingestion.store import ChunkStore
-from core.rag.retriever import Retriever
+from learning_tool.core.ingestion.embedder import FakeEmbedder
+from learning_tool.core.ingestion.store import ChunkStore
+from learning_tool.core.rag.retriever import Retriever
 
 
 def _store_with_chunks(tmp_path: Path, chunks: list[str], embedder: FakeEmbedder) -> ChunkStore:

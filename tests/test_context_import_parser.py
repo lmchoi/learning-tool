@@ -1,6 +1,6 @@
 import pytest
 
-from core.context_import.parser import ImportedContext, parse_import
+from learning_tool.core.context_import.parser import ImportedContext, parse_import
 
 _VALID = """\
 ## Goal

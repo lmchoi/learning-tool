@@ -3,7 +3,7 @@ import uuid
 import pytest
 from pydantic import ValidationError
 
-from core.models import ContextMetadata, EvaluationResult, Question
+from learning_tool.core.models import ContextMetadata, EvaluationResult, Question
 
 
 def test_question_auto_generates_valid_uuid() -> None:

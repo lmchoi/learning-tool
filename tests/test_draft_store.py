@@ -1,8 +1,8 @@
 import time
 from pathlib import Path
 
-from core.context_import.draft_store import DraftStore
-from core.context_import.parser import ImportedContext
+from learning_tool.core.context_import.draft_store import DraftStore
+from learning_tool.core.context_import.parser import ImportedContext
 
 
 def test_draft_store_save_and_load(tmp_path: Path) -> None:

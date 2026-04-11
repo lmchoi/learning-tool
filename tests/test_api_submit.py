@@ -4,20 +4,20 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
-from core.models import BankQuestion
+from learning_tool.api.main import app
+from learning_tool.core.models import BankQuestion
 
 
 def _make_client(
     mock_bank_store: MagicMock, mock_session_store: MagicMock
 ) -> Generator[tuple[TestClient, MagicMock, MagicMock]]:
     with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.Retriever"),
-        patch("api.main.QuestionBankStore", return_value=mock_bank_store),
-        patch("api.main.SessionStore", return_value=mock_session_store),
+        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.AsyncAnthropic"),
+        patch("learning_tool.api.main.genai"),
+        patch("learning_tool.api.main.Retriever"),
+        patch("learning_tool.api.main.QuestionBankStore", return_value=mock_bank_store),
+        patch("learning_tool.api.main.SessionStore", return_value=mock_session_store),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):

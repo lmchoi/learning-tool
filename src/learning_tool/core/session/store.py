@@ -6,9 +6,9 @@ from pathlib import Path
 from alembic.config import Config
 
 from alembic import command
-from core.session.models import QuestionAttempt, SessionRecord
+from learning_tool.core.session.models import QuestionAttempt, SessionRecord
 
-_ALEMBIC_DIR = Path(__file__).resolve().parent.parent.parent / "alembic"
+_ALEMBIC_DIR = Path(__file__).resolve().parents[4] / "alembic"
 
 
 class SessionStore:

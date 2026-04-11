@@ -22,10 +22,11 @@ dependencies = [
 package = true
 
 [tool.setuptools.packages.find]
-include = ["adapters*", "api*", "cli*", "core*"]
+where = ["src"]
+include = ["learning_tool*"]
 
 [project.scripts]
-learn = "cli.main:app"
+learn = "learning_tool.cli.main:app"
 
 [tool.ruff]
 line-length = 100
@@ -40,16 +41,16 @@ ignore = []
 extend-immutable-calls = ["typer.Argument", "typer.Option"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["core"]
+known-first-party = ["learning_tool"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib -m 'not slow'"
-pythonpath = ["."]
+pythonpath = ["src"]
 markers = ["slow: requires real model, run with -m slow"]
 
 [tool.coverage.run]
 branch = true
-source = ["adapters", "api", "cli", "core"]
+source = ["learning_tool"]
 omit = ["*/tests/*", "*/migrations/*"]
 
 [tool.coverage.report]

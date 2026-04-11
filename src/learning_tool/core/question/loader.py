@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from core.models import BankQuestion
+from learning_tool.core.models import BankQuestion
 
 
 def load_questions(path: Path) -> list[BankQuestion]:

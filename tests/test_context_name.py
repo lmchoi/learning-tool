@@ -1,6 +1,6 @@
 import pytest
 
-from core.context_name import validate_context_name
+from learning_tool.core.context_name import validate_context_name
 
 
 @pytest.mark.parametrize(

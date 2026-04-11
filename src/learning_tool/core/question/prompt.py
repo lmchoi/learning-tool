@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from core.models import ContextMetadata, UserProfile
+from learning_tool.core.models import ContextMetadata, UserProfile
 
 _TEMPLATE = (Path(__file__).parent / "question_prompt.md").read_text()
 

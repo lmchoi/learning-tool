@@ -1,8 +1,8 @@
 import logging
 
-from core.ingestion.embedder import Embedder
-from core.ingestion.store import ChunkStore
-from core.rag.similarity import top_k
+from learning_tool.core.ingestion.embedder import Embedder
+from learning_tool.core.ingestion.store import ChunkStore
+from learning_tool.core.rag.similarity import top_k
 
 logger = logging.getLogger(__name__)
 

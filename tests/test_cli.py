@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from cli.main import app
-from core.ingestion.embedder import FakeEmbedder
-from core.ingestion.store import ChunkStore, ContextStore
-from core.models import ContextMetadata
+from learning_tool.cli.main import app
+from learning_tool.core.ingestion.embedder import FakeEmbedder
+from learning_tool.core.ingestion.store import ChunkStore, ContextStore
+from learning_tool.core.models import ContextMetadata
 
 runner = CliRunner()
 
@@ -62,7 +62,9 @@ def test_init_force_reingest_overwrites_existing_context(tmp_path: Path) -> None
         ContextMetadata(goal="Old goal.", focus_areas=["old area"]),
     )
 
-    with patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)):
+    with patch(
+        "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
+    ):
         result = runner.invoke(
             app,
             [
@@ -97,8 +99,10 @@ def test_init_force_reingest_updates_context_yaml(tmp_path: Path) -> None:
     )
 
     with (
-        patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)),
-        patch("cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
+        patch(
+            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
+        ),
+        patch("learning_tool.cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
     ):
         result = runner.invoke(
             app,
@@ -130,8 +134,10 @@ def test_init_ingests_supported_files(tmp_path: Path) -> None:
     store_dir = tmp_path / "store"
 
     with (
-        patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)),
-        patch("cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
+        patch(
+            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
+        ),
+        patch("learning_tool.cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
     ):
         result = runner.invoke(
             app,
@@ -151,8 +157,10 @@ def test_init_extracts_and_saves_context_yaml(source_dir: Path, tmp_path: Path) 
     store_dir = tmp_path / "store"
 
     with (
-        patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)),
-        patch("cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
+        patch(
+            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
+        ),
+        patch("learning_tool.cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
     ):
         result = runner.invoke(
             app,
@@ -179,8 +187,10 @@ def test_init_prints_goal_and_focus_areas(source_dir: Path, tmp_path: Path) -> N
     store_dir = tmp_path / "store"
 
     with (
-        patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)),
-        patch("cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
+        patch(
+            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
+        ),
+        patch("learning_tool.cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
     ):
         result = runner.invoke(
             app,
@@ -206,8 +216,10 @@ def test_init_skips_context_extraction_when_no_goal_md(source_dir: Path, tmp_pat
     store_dir = tmp_path / "store"
 
     with (
-        patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)),
-        patch("cli.main.extract_context", new=AsyncMock()) as mock_extract,
+        patch(
+            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
+        ),
+        patch("learning_tool.cli.main.extract_context", new=AsyncMock()) as mock_extract,
     ):
         result = runner.invoke(
             app,
@@ -276,7 +288,9 @@ def test_init_wipes_and_rebuilds(tmp_path: Path, context: str) -> None:
     (source / "doc.md").write_text("Only paragraph.")
     store_dir = tmp_path / "store"
 
-    with patch("cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)):
+    with patch(
+        "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
+    ):
         runner.invoke(
             app,
             ["init", "--source", str(source), "--context", context, "--store-dir", str(store_dir)],

@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from core.ingestion.embedder import SentenceTransformerEmbedder
-from core.ingestion.store import ChunkStore
-from core.rag.retriever import Retriever
+from learning_tool.core.ingestion.embedder import SentenceTransformerEmbedder
+from learning_tool.core.ingestion.store import ChunkStore
+from learning_tool.core.rag.retriever import Retriever
 
 
 @pytest.mark.slow

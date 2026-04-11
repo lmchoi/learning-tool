@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from adapters.mcp.server import record_attempt, session_id
+from learning_tool.adapters.mcp.server import record_attempt, session_id
 
 
 def test_session_id_is_uuid() -> None:

@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
+from learning_tool.api.main import app
 
 
 @pytest.fixture()
 def mock_retriever() -> Generator[MagicMock]:
-    with patch("api.main.Retriever") as mock_cls:
+    with patch("learning_tool.api.main.Retriever") as mock_cls:
         yield mock_cls.return_value
 
 
@@ -26,10 +26,10 @@ def client(
     tmp_path: Path, mock_retriever: MagicMock, mock_session_store: MagicMock
 ) -> Generator[TestClient]:
     with (
-        patch("api.main.SentenceTransformerEmbedder"),
-        patch("api.main.AsyncAnthropic"),
-        patch("api.main.genai"),
-        patch("api.main.SessionStore", return_value=mock_session_store),
+        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.AsyncAnthropic"),
+        patch("learning_tool.api.main.genai"),
+        patch("learning_tool.api.main.SessionStore", return_value=mock_session_store),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):

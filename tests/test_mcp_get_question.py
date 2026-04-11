@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from adapters.mcp.server import get_question
+from learning_tool.adapters.mcp.server import get_question
 
 
 @pytest.fixture()
