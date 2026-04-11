@@ -3,7 +3,8 @@ from pathlib import Path
 from learning_tool.core.models import ContextMetadata, UserProfile
 from learning_tool.core.session.models import QuestionAttempt
 
-_TEMPLATE = (Path(__file__).parent / "export_evaluation_prompt.md").read_text()
+_PROMPTS_DIR = Path(__file__).parent.parent.parent / "resources" / "prompts"
+_TEMPLATE = (_PROMPTS_DIR / "export_evaluation_prompt.md").read_text()
 
 
 def build_export_prompt(
