@@ -10,11 +10,12 @@ from learning_tool.core.evaluation.prompt import build_evaluation_prompt
 from learning_tool.core.ingestion.context import extract_context
 from learning_tool.core.ingestion.ingest import ingest
 from learning_tool.core.ingestion.sources import walk_source_dir
-from learning_tool.core.models import UserProfile
+from learning_tool.core.models import ContextMetadata, EvaluationResult, UserProfile
 from learning_tool.core.question.generate import generate_question
 from learning_tool.core.question.loader import load_questions
 from learning_tool.core.question.prompt import build_question_prompt
 from learning_tool.core.question.store import QuestionBankStore
+from learning_tool.core.rag.retriever import Retriever
 from learning_tool.core.session.store import SessionStore
 from learning_tool.core.settings import LOG_LEVEL
 from learning_tool.core.settings import STORE_DIR as DEFAULT_STORE
@@ -132,21 +133,43 @@ def load_questions_cmd(
     typer.echo(f"Loaded {added} new question(s) into '{context}' ({len(questions)} in file).")
 
 
-def _build_prompt(
-    stores: Stores,
+def setup_context_resources(
     context: str,
     query: str,
     experience_level: str,
     k: int,
-) -> str:
+    stores: Stores,
+) -> tuple[Retriever, UserProfile, ContextMetadata | None, list[str]]:
+    """Validate context, load profile/metadata, and retrieve chunks."""
     ctx_dir = stores.store_dir / context
     if not ctx_dir.exists():
         typer.echo(f"Error: context '{context}' not found. Run 'make ingest' first.", err=True)
         raise typer.Exit(code=1)
+
     metadata = stores.context_store.load_context(context)
     profile = UserProfile(experience_level=experience_level)
     chunks = [chunk for chunk, _ in stores.retriever.retrieve(context, query, k)]
-    return build_question_prompt(chunks, profile, metadata)
+    return stores.retriever, profile, metadata, chunks
+
+
+def print_evaluation_results(evaluation: EvaluationResult) -> str:
+    """Format evaluation results into a printable string."""
+    parts = [f"Score: {evaluation.score}/10"]
+    if evaluation.strengths:
+        parts.append("\nStrengths:")
+        for s in evaluation.strengths:
+            parts.append(f"  - {s}")
+    if evaluation.gaps:
+        parts.append("\nGaps:")
+        for g in evaluation.gaps:
+            parts.append(f"  - {g}")
+    if evaluation.missing_points:
+        parts.append("\nMissing points:")
+        for m in evaluation.missing_points:
+            parts.append(f"  - {m}")
+    if evaluation.suggested_addition:
+        parts.append(f"\nSuggested addition: {evaluation.suggested_addition}")
+    return "\n".join(parts)
 
 
 @app.command()
@@ -159,7 +182,10 @@ def question_prompt(
 ) -> None:
     """Print the question prompt that would be sent to Claude."""
     stores: Stores = ctx.obj
-    print(_build_prompt(stores, context, query, experience_level, k))
+    _, profile, metadata, chunks = setup_context_resources(
+        context, query, experience_level, k, stores
+    )
+    print(build_question_prompt(chunks, profile, metadata))
 
 
 @app.command()
@@ -172,7 +198,10 @@ def question(
 ) -> None:
     """Generate a practice question from retrieved chunks using Claude."""
     stores: Stores = ctx.obj
-    prompt = _build_prompt(stores, context, query, experience_level, k)
+    _, profile, metadata, chunks = setup_context_resources(
+        context, query, experience_level, k, stores
+    )
+    prompt = build_question_prompt(chunks, profile, metadata)
     result = asyncio.run(generate_question(prompt, AsyncAnthropic()))
     print(result.text)
 
@@ -189,32 +218,18 @@ def evaluate(
 ) -> None:
     """Evaluate a learner's answer to a question using Claude."""
     stores: Stores = ctx.obj
-    metadata = stores.context_store.load_context(context)
-    profile = UserProfile(experience_level=experience_level)
-    chunks = [chunk for chunk, _ in stores.retriever.retrieve(context, query, k)]
-    prompt = build_evaluation_prompt(
+    _, profile, metadata, chunks = setup_context_resources(
+        context, query, experience_level, k, stores
+    )
+    eval_prompt = build_evaluation_prompt(
         question=question_text,
         answer=answer_text,
         chunks=chunks,
         profile=profile,
         metadata=metadata,
     )
-    result = asyncio.run(evaluate_answer(prompt, AsyncAnthropic()))
-    print(f"Score: {result.score}/10")
-    if result.strengths:
-        print("\nStrengths:")
-        for s in result.strengths:
-            print(f"  - {s}")
-    if result.gaps:
-        print("\nGaps:")
-        for g in result.gaps:
-            print(f"  - {g}")
-    if result.missing_points:
-        print("\nMissing points:")
-        for m in result.missing_points:
-            print(f"  - {m}")
-    if result.suggested_addition:
-        print(f"\nSuggested addition: {result.suggested_addition}")
+    result = asyncio.run(evaluate_answer(eval_prompt, AsyncAnthropic()))
+    print(print_evaluation_results(result))
     if result.follow_up_question:
         print(f"\nFollow-up question: {result.follow_up_question}")
 
@@ -229,18 +244,12 @@ def practice(
 ) -> None:
     """Interactive practice loop — question, answer, evaluate, repeat."""
     stores: Stores = ctx.obj
-    ctx_dir = stores.store_dir / context
-    if not ctx_dir.exists():
-        typer.echo(f"Error: context '{context}' not found. Run 'make ingest' first.", err=True)
-        raise typer.Exit(code=1)
 
     async def loop() -> None:
         client = AsyncAnthropic()
-        profile = UserProfile(experience_level=experience_level)
-        metadata = stores.context_store.load_context(context)
-        # Chunks are retrieved once per topic query and reused across follow-ups,
-        # since follow-up questions target gaps within the same retrieved context.
-        chunks = [chunk for chunk, _ in stores.retriever.retrieve(context, query, k)]
+        _, profile, metadata, chunks = setup_context_resources(
+            context, query, experience_level, k, stores
+        )
 
         # Context-scoped stores are created on demand using the shared store_dir
         session_store = SessionStore(stores.store_dir, context)
@@ -266,21 +275,7 @@ def practice(
 
             session_store.record(session_id, next_question, answer, evaluation.score)
 
-            print(f"\nScore: {evaluation.score}/10")
-            if evaluation.strengths:
-                print("\nStrengths:")
-                for s in evaluation.strengths:
-                    print(f"  - {s}")
-            if evaluation.gaps:
-                print("\nGaps:")
-                for g in evaluation.gaps:
-                    print(f"  - {g}")
-            if evaluation.missing_points:
-                print("\nMissing points:")
-                for m in evaluation.missing_points:
-                    print(f"  - {m}")
-            if evaluation.suggested_addition:
-                print(f"\nSuggested addition: {evaluation.suggested_addition}")
+            print(f"\n{print_evaluation_results(evaluation)}")
 
             if evaluation.follow_up_question:
                 next_question = evaluation.follow_up_question
