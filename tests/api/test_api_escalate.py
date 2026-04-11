@@ -39,9 +39,9 @@ def client_with_github(tmp_path: Path, mock_session_store: MagicMock) -> Generat
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),
-        patch("learning_tool.api.main._GITHUB_CONFIGURED", True),
-        patch("learning_tool.api.main.GITHUB_TOKEN", "fake-token"),
-        patch("learning_tool.api.main.GITHUB_REPO", "owner/repo"),
+        patch("learning_tool.api.routers.admin._GITHUB_CONFIGURED", True),
+        patch("learning_tool.api.routers.admin.GITHUB_TOKEN", "fake-token"),
+        patch("learning_tool.api.routers.admin.GITHUB_REPO", "owner/repo"),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
@@ -56,7 +56,7 @@ def client_no_github(tmp_path: Path, mock_session_store: MagicMock) -> Generator
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),
-        patch("learning_tool.api.main._GITHUB_CONFIGURED", False),
+        patch("learning_tool.api.routers.admin._GITHUB_CONFIGURED", False),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
