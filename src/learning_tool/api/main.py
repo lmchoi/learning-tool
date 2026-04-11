@@ -7,7 +7,6 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import httpx
 import yaml
 from anthropic import AsyncAnthropic
 from fastapi import FastAPI, Form, HTTPException
@@ -30,7 +29,7 @@ from learning_tool.api.models import (
     EvaluationResponse,
     QuestionResponse,
 )
-from learning_tool.api.routers import annotations
+from learning_tool.api.routers import admin, annotations
 from learning_tool.core.context_import.draft_store import DraftStore
 from learning_tool.core.context_import.parser import ImportedContext, parse_import
 from learning_tool.core.context_name import validate_context_name
@@ -45,11 +44,9 @@ from learning_tool.core.question.generate_gemini import generate_question_gemini
 from learning_tool.core.question.loader import load_questions
 from learning_tool.core.question.prompt import build_question_prompt
 from learning_tool.core.rag.retriever import Retriever
-from learning_tool.core.settings import GITHUB_REPO, GITHUB_TOKEN, LOG_LEVEL, STORE_DIR
+from learning_tool.core.settings import LOG_LEVEL, STORE_DIR
 
 logger = logging.getLogger(__name__)
-
-_GITHUB_CONFIGURED = bool(GITHUB_TOKEN and GITHUB_REPO)
 
 
 @asynccontextmanager
@@ -81,6 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(annotations.router)
+app.include_router(admin.router)
 
 
 @app.middleware("http")
@@ -605,154 +603,6 @@ async def get_history(
             "matched": matched,
             "unmatched": unmatched,
         },
-    )
-
-
-_VALID_TARGET_TYPES = {"question", "evaluation"}
-_VALID_SENTIMENTS = {"up", "down"}
-
-
-@app.get("/admin", response_class=HTMLResponse, include_in_schema=False)
-async def get_admin_index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "admin_index.html")
-
-
-@app.get("/admin/contexts", response_class=HTMLResponse, include_in_schema=False)
-async def get_admin_contexts(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "admin_contexts.html", {"error": None})
-
-
-@app.post(
-    "/admin/contexts", response_class=HTMLResponse, response_model=None, include_in_schema=False
-)
-async def post_admin_contexts(
-    request: Request,
-    name: str = Form(...),
-) -> HTMLResponse | RedirectResponse:
-    try:
-        validate_context_name(name)
-    except ValueError as e:
-        return templates.TemplateResponse(
-            request,
-            "admin_contexts.html",
-            {"error": str(e)},
-            status_code=400,
-        )
-    return RedirectResponse(url=f"/ui/{name}/setup", status_code=303)
-
-
-@app.get("/admin/annotations", response_class=HTMLResponse, include_in_schema=False)
-async def get_admin_annotations(
-    request: Request,
-    context_name: str,
-    target_type: str | None = None,
-    sentiment: str | None = None,
-    flagged: bool = False,
-) -> HTMLResponse:
-    if target_type is not None and target_type not in _VALID_TARGET_TYPES:
-        logger.warning("422 invalid target_type: %r", target_type)
-        raise HTTPException(
-            status_code=422, detail=f"target_type must be one of {_VALID_TARGET_TYPES}"
-        )
-    if sentiment is not None and sentiment not in _VALID_SENTIMENTS:
-        logger.warning("422 invalid sentiment: %r", sentiment)
-        raise HTTPException(status_code=422, detail=f"sentiment must be one of {_VALID_SENTIMENTS}")
-    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    raw = session_store.load_annotations(
-        target_type=target_type, sentiment=sentiment, flagged=flagged
-    )
-    for ann in raw:
-        rj = ann.get("result_json")
-        ann["result"] = json.loads(rj) if isinstance(rj, str) else None
-    return templates.TemplateResponse(
-        request,
-        "admin_annotations.html",
-        {
-            "context_name": context_name,
-            "annotations": raw,
-            "target_type": target_type or "",
-            "sentiment": sentiment or "",
-            "flagged": flagged,
-            "github_configured": _GITHUB_CONFIGURED,
-        },
-    )
-
-
-@app.post(
-    "/admin/annotations/{annotation_id}/escalate",
-    response_class=HTMLResponse,
-    include_in_schema=False,
-)
-async def post_escalate_annotation(
-    request: Request,
-    annotation_id: int,
-    context_name: str,
-) -> HTMLResponse:
-    if not _GITHUB_CONFIGURED:
-        logger.error("503 GitHub escalation not configured")
-        raise HTTPException(status_code=503, detail="GitHub escalation is not configured")
-    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    ann = session_store.load_annotation(annotation_id)
-    if ann is None:
-        logger.warning("404 annotation not found: id=%d", annotation_id)
-        raise HTTPException(status_code=404, detail="Annotation not found")
-
-    raw_rj = ann.get("result_json")
-    result = json.loads(raw_rj) if isinstance(raw_rj, str) else {}
-    gaps = "\n".join(f"- {g}" for g in result.get("gaps", [])) or "N/A"
-    body = (
-        f"**Type:** {ann['target_type']}\n"
-        f"**Sentiment:** {ann['sentiment']}\n"
-        f"**Question:** {ann['question_text']}\n"
-        f"**Answer:** {ann['answer_text']}\n"
-        f"**Score:** {ann['score']}/10\n"
-        f"**Evaluation gaps:**\n{gaps}\n"
-        f'**Learner comment:** "{ann.get("comment") or ""}"\n'
-    )
-    async with httpx.AsyncClient() as http:
-        resp = await http.post(
-            f"https://api.github.com/repos/{GITHUB_REPO}/issues",
-            headers={
-                "Authorization": f"Bearer {GITHUB_TOKEN}",
-                "Accept": "application/vnd.github+json",
-            },
-            json={
-                "title": f"Feedback quality: {ann['target_type']} annotation #{annotation_id}",
-                "body": body,
-                "labels": ["feedback-quality"],
-            },
-        )
-    if resp.status_code not in (200, 201):
-        logger.error(
-            "502 GitHub API error: status=%d annotation_id=%d", resp.status_code, annotation_id
-        )
-        raise HTTPException(status_code=502, detail="GitHub API error")
-    issue_url = resp.json().get("html_url", "")
-    return templates.TemplateResponse(
-        request,
-        "escalated.html",
-        {"issue_url": issue_url, "annotation_id": annotation_id},
-    )
-
-
-@app.post(
-    "/admin/annotations/{annotation_id}/flag", response_class=HTMLResponse, include_in_schema=False
-)
-async def post_flag_annotation(
-    request: Request,
-    annotation_id: int,
-    context_name: str,
-) -> HTMLResponse:
-    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    ann = session_store.load_annotation(annotation_id)
-    if ann is None:
-        logger.warning("404 annotation not found: id=%d", annotation_id)
-        raise HTTPException(status_code=404, detail="Annotation not found")
-    session_store.flag_annotation(annotation_id)
-    return templates.TemplateResponse(
-        request,
-        "flagged.html",
-        {"annotation_id": annotation_id},
     )
 
 
