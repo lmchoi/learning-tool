@@ -34,7 +34,7 @@ def test_middleware_logs_request(
     mock_retriever.retrieve.return_value = [("chunk", 0.9)]
     with (
         patch(
-            "learning_tool.api.routers.api.generate_question_gemini",
+            "learning_tool.api.routers.endpoints.generate_question_gemini",
             new=AsyncMock(return_value=question),
         ),
         caplog.at_level(logging.INFO, logger="learning_tool.api.main"),

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Form, HTTPException
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 
-from learning_tool.api.deps import _get_bank_store, _get_session_store, templates
+from learning_tool.api.deps import get_bank_store, get_session_store, templates
 from learning_tool.core.context_name import validate_context_name
 from learning_tool.core.evaluation.export_prompt import build_export_prompt
 from learning_tool.core.evaluation.paste_back import parse_paste_back
@@ -22,10 +22,10 @@ async def get_capture(request: Request, context_name: str) -> HTMLResponse:
         validate_context_name(context_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    bank_store = _get_bank_store(
+    bank_store = get_bank_store(
         request.app.state.bank_stores, request.app.state.store_dir, context_name
     )
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     question, session_id = await asyncio.gather(
@@ -59,10 +59,10 @@ async def post_capture(
         validate_context_name(context_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    bank_store = _get_bank_store(
+    bank_store = get_bank_store(
         request.app.state.bank_stores, request.app.state.store_dir, context_name
     )
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     # get_random may repeat questions already seen this session — intentional for now;
@@ -97,7 +97,7 @@ async def get_capture_export(request: Request, context_name: str, session_id: st
         validate_context_name(context_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     session, metadata = await asyncio.gather(
@@ -130,7 +130,7 @@ async def post_capture_paste_back(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     results = parse_paste_back(evaluation_text)
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
 

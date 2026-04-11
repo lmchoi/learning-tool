@@ -4,7 +4,7 @@ from fastapi import APIRouter, Form, HTTPException
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
 
-from learning_tool.api.deps import _get_session_store, templates
+from learning_tool.api.deps import get_session_store, templates
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ async def post_annotate(
     if sentiment not in ("up", "down"):
         logger.warning("422 invalid sentiment: %r", sentiment)
         raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     session_store.record_annotation(question_id, "question", sentiment, comment or None)
@@ -73,7 +73,7 @@ async def post_report_evaluation(
     if not comment.strip():
         logger.warning("422 empty comment on evaluation report for question_id=%s", question_id)
         raise HTTPException(status_code=422, detail="comment is required")
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     session_store.record_annotation(question_id, "evaluation", "down", comment)

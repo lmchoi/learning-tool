@@ -12,14 +12,14 @@ _IMPORT_PROMPT: str | None = None
 _IMPORT_PROMPT_PATH = PROMPTS_DIR / "context_import_prompt.md"
 
 
-def _get_import_prompt() -> str:
+def get_import_prompt() -> str:
     global _IMPORT_PROMPT
     if _IMPORT_PROMPT is None:
         _IMPORT_PROMPT = _IMPORT_PROMPT_PATH.read_text()
     return _IMPORT_PROMPT
 
 
-def _get_session_store(
+def get_session_store(
     cache: dict[str, SessionStore], store_dir: Path, context: str
 ) -> SessionStore:
     if context not in cache:
@@ -27,7 +27,7 @@ def _get_session_store(
     return cache[context]
 
 
-def _get_bank_store(
+def get_bank_store(
     cache: dict[str, QuestionBankStore], store_dir: Path, context: str
 ) -> QuestionBankStore:
     if context not in cache:

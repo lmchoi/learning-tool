@@ -6,7 +6,7 @@ from fastapi import APIRouter, Form, HTTPException
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 
-from learning_tool.api.deps import _get_session_store, templates
+from learning_tool.api.deps import get_session_store, templates
 from learning_tool.core.context_name import validate_context_name
 from learning_tool.core.settings import GITHUB_REPO, GITHUB_TOKEN
 
@@ -98,7 +98,7 @@ async def get_admin_annotations(
     if sentiment is not None and sentiment not in _VALID_SENTIMENTS:
         logger.warning("422 invalid sentiment: %r", sentiment)
         raise HTTPException(status_code=422, detail=f"sentiment must be one of {_VALID_SENTIMENTS}")
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     raw = session_store.load_annotations(
@@ -134,7 +134,7 @@ async def post_escalate_annotation(
     if not _GITHUB_CONFIGURED:
         logger.error("503 GitHub escalation not configured")
         raise HTTPException(status_code=503, detail="GitHub escalation is not configured")
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     ann = session_store.load_annotation(annotation_id)
@@ -157,7 +157,7 @@ async def post_flag_annotation(
     annotation_id: int,
     context_name: str,
 ) -> HTMLResponse:
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     ann = session_store.load_annotation(annotation_id)

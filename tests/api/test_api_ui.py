@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from learning_tool.api.deps import _get_session_store
+from learning_tool.api.deps import get_session_store
 from learning_tool.api.main import app
 from learning_tool.core.models import ContextMetadata, EvaluationResult, Question
 from learning_tool.core.session.store import SessionStore
@@ -282,29 +282,29 @@ def test_practice_page_includes_history_link(client: TestClient) -> None:
     assert "/ui/my-context/history" in response.text
 
 
-def test_get_session_store_creates_instance_on_first_call(tmp_path: Path) -> None:
+def testget_session_store_creates_instance_on_first_call(tmp_path: Path) -> None:
     cache: dict[str, SessionStore] = {}
 
-    store = _get_session_store(cache, tmp_path, "python")
+    store = get_session_store(cache, tmp_path, "python")
 
     assert isinstance(store, SessionStore)
     assert "python" in cache
 
 
-def test_get_session_store_returns_same_instance_on_second_call(tmp_path: Path) -> None:
+def testget_session_store_returns_same_instance_on_second_call(tmp_path: Path) -> None:
     cache: dict[str, SessionStore] = {}
 
-    first = _get_session_store(cache, tmp_path, "python")
-    second = _get_session_store(cache, tmp_path, "python")
+    first = get_session_store(cache, tmp_path, "python")
+    second = get_session_store(cache, tmp_path, "python")
 
     assert first is second
 
 
-def test_get_session_store_creates_separate_instances_per_context(tmp_path: Path) -> None:
+def testget_session_store_creates_separate_instances_per_context(tmp_path: Path) -> None:
     cache: dict[str, SessionStore] = {}
 
-    python_store = _get_session_store(cache, tmp_path, "python")
-    sql_store = _get_session_store(cache, tmp_path, "sql")
+    python_store = get_session_store(cache, tmp_path, "python")
+    sql_store = get_session_store(cache, tmp_path, "sql")
 
     assert python_store is not sql_store
     assert len(cache) == 2
