@@ -6,7 +6,7 @@ from fastapi import APIRouter, Form, HTTPException
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
 
-from learning_tool.api.deps import _get_bank_store, _get_session_store, templates
+from learning_tool.api.deps import get_bank_store, get_session_store, templates
 from learning_tool.core.evaluation.evaluate import evaluate_answer
 from learning_tool.core.evaluation.prompt import build_evaluation_prompt
 from learning_tool.core.models import UserProfile
@@ -91,7 +91,7 @@ async def post_evaluate_fragment(
         question=question, answer=answer, chunks=chunks, profile=profile, metadata=metadata
     )
     result = await evaluate_answer(prompt, request.app.state.anthropic)
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     attempt_id = session_store.record(
@@ -125,10 +125,10 @@ async def post_submit_fragment(
     session_id: str = Form(...),
     question_id: str | None = Form(default=None),
 ) -> HTMLResponse:
-    bank_store = _get_bank_store(
+    bank_store = get_bank_store(
         request.app.state.bank_stores, request.app.state.store_dir, context_name
     )
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     next_question, _ = await asyncio.gather(
@@ -165,7 +165,7 @@ async def post_submit_fragment(
     include_in_schema=False,
 )
 async def get_session_results(request: Request, context_name: str, session_id: str) -> HTMLResponse:
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     session = session_store.load_session(session_id)
@@ -197,7 +197,7 @@ async def get_history(
     matched: int | None = None,
     unmatched: str | None = None,
 ) -> HTMLResponse:
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     raw_sessions = session_store.load_sessions()
@@ -236,7 +236,7 @@ async def get_bank_question_fragment(
     focus_area: str,
     session_id: str,
 ) -> HTMLResponse:
-    bank_store = _get_bank_store(
+    bank_store = get_bank_store(
         request.app.state.bank_stores, request.app.state.store_dir, context_name
     )
     question = await asyncio.to_thread(bank_store.get_random, focus_area)

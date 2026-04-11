@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from starlette.requests import Request
 
-from learning_tool.api.deps import _get_bank_store, _get_session_store
+from learning_tool.api.deps import get_bank_store, get_session_store
 from learning_tool.api.models import (
     AttemptRequest,
     EvaluateRequest,
@@ -33,7 +33,7 @@ async def get_bank_question(
     if pick != "random":
         logger.warning("422 invalid pick param: %r", pick)
         raise HTTPException(status_code=422, detail="pick must be 'random'")
-    bank_store = _get_bank_store(
+    bank_store = get_bank_store(
         request.app.state.bank_stores, request.app.state.store_dir, context_name
     )
     question = await asyncio.to_thread(bank_store.get_random, focus_area)
@@ -57,7 +57,7 @@ async def post_attempt(request: Request, body: AttemptRequest) -> dict[str, int]
     if not (request.app.state.store_dir / body.context).exists():
         logger.warning("404 context not found: %s", body.context)
         raise HTTPException(status_code=404, detail=f"Context '{body.context}' not found")
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, body.context
     )
     attempt_id = await asyncio.to_thread(
@@ -85,9 +85,7 @@ async def get_api_question(
         logger.warning("404 context not found: %s", context)
         raise HTTPException(status_code=404, detail=f"Context '{context}' not found")
 
-    bank_store = _get_bank_store(
-        request.app.state.bank_stores, request.app.state.store_dir, context
-    )
+    bank_store = get_bank_store(request.app.state.bank_stores, request.app.state.store_dir, context)
     question = await asyncio.to_thread(bank_store.get_random, focus_area)
     if question is None:
         logger.warning("404 question bank empty for context: %s", context)

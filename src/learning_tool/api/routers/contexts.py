@@ -8,9 +8,9 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, Response
 
 from learning_tool.api.deps import (
-    _get_bank_store,
-    _get_import_prompt,
-    _get_session_store,
+    get_bank_store,
+    get_import_prompt,
+    get_session_store,
     templates,
 )
 from learning_tool.api.models import DraftRequest, DraftResponse
@@ -86,7 +86,7 @@ async def get_ui(request: Request, context_name: str, query: str | None = None) 
             "start.html",
             {"context_name": context_name, "focus_areas": metadata.focus_areas},
         )
-    session_store = _get_session_store(
+    session_store = get_session_store(
         request.app.state.session_stores, request.app.state.store_dir, context_name
     )
     session_id = session_store.start_session()
@@ -102,7 +102,7 @@ async def get_setup(request: Request, context_name: str) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "setup.html",
-        {"context_name": context_name, "prompt_text": _get_import_prompt()},
+        {"context_name": context_name, "prompt_text": get_import_prompt()},
     )
 
 
@@ -202,7 +202,7 @@ async def post_confirm(
     questions_path: Path = request.app.state.store_dir / context_name / "questions.yaml"
     await asyncio.to_thread(questions_path.write_text, questions_yaml)
 
-    bank_store = _get_bank_store(
+    bank_store = get_bank_store(
         request.app.state.bank_stores, request.app.state.store_dir, context_name
     )
     added = await asyncio.to_thread(bank_store.add, load_questions(questions_path))

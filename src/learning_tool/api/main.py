@@ -12,12 +12,12 @@ from google import genai
 from starlette.requests import Request
 from starlette.responses import Response
 
-from learning_tool.api.routers import (  # noqa: F401 (used below)
+from learning_tool.api.routers import (
     admin,
     annotations,
-    api,
     capture,
     contexts,
+    endpoints,
     practice,
 )
 from learning_tool.core.context_import.draft_store import DraftStore
@@ -60,7 +60,7 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), na
 app.include_router(annotations.router)
 app.include_router(admin.router)
 app.include_router(capture.router)
-app.include_router(api.router)
+app.include_router(endpoints.router)
 app.include_router(practice.router)
 app.include_router(contexts.router)
 

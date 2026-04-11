@@ -30,7 +30,7 @@ def test_get_question_returns_200(client: TestClient, mock_retriever: MagicMock)
     question = Question(text="What is the capital of France?")
     mock_retriever.retrieve.return_value = [("chunk one", 0.9), ("chunk two", 0.8)]
     with patch(
-        "learning_tool.api.routers.api.generate_question_gemini",
+        "learning_tool.api.routers.endpoints.generate_question_gemini",
         new=AsyncMock(return_value=question),
     ):
         response = client.get("/contexts/geography/question?query=capitals")
