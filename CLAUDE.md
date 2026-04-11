@@ -60,9 +60,9 @@ uv run pytest
 
 ## Key Paths
 
-- `core/` — the tool, domain agnostic
-- `core/settings.py` — single source of truth for env var config (STORE_DIR etc); both API and CLI import from here
-- `core/<domain>/store.py` — storage for that domain (follows `core/ingestion/store.py` precedent; storage lives in the domain layer, not a separate infrastructure layer — see ADR 010)
+- `src/learning_tool/core/` — the tool, domain agnostic
+- `src/learning_tool/core/settings.py` — single source of truth for env var config (STORE_DIR etc); both API and CLI import from here
+- `src/learning_tool/core/<domain>/store.py` — storage for that domain (follows `core/ingestion/store.py` precedent; storage lives in the domain layer, not a separate infrastructure layer — see ADR 010)
 - `contexts/` — pluggable learning contexts, gitignored
 
 ## GitHub Milestones
