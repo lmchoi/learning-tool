@@ -30,6 +30,7 @@ from learning_tool.api.models import (
     EvaluationResponse,
     QuestionResponse,
 )
+from learning_tool.api.routers import annotations
 from learning_tool.core.context_import.draft_store import DraftStore
 from learning_tool.core.context_import.parser import ImportedContext, parse_import
 from learning_tool.core.context_name import validate_context_name
@@ -79,6 +80,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+app.include_router(annotations.router)
 
 
 @app.middleware("http")
@@ -604,71 +606,6 @@ async def get_history(
             "unmatched": unmatched,
         },
     )
-
-
-@app.get("/annotate/form", response_class=HTMLResponse, include_in_schema=False)
-async def get_annotate_form(
-    request: Request,
-    question_id: str,
-    context_name: str,
-    sentiment: str,
-) -> HTMLResponse:
-    if sentiment not in ("up", "down"):
-        logger.warning("422 invalid sentiment: %r", sentiment)
-        raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
-    return templates.TemplateResponse(
-        request,
-        "annotation_form.html",
-        {"question_id": question_id, "context_name": context_name, "sentiment": sentiment},
-    )
-
-
-@app.post("/annotate", response_class=HTMLResponse, include_in_schema=False)
-async def post_annotate(
-    request: Request,
-    question_id: str = Form(...),
-    context_name: str = Form(...),
-    sentiment: str = Form(...),
-    comment: str | None = Form(default=None),
-) -> HTMLResponse:
-    if sentiment not in ("up", "down"):
-        logger.warning("422 invalid sentiment: %r", sentiment)
-        raise HTTPException(status_code=422, detail="sentiment must be 'up' or 'down'")
-    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    session_store.record_annotation(question_id, "question", sentiment, comment or None)
-    return templates.TemplateResponse(
-        request,
-        "annotated.html",
-        {"sentiment": sentiment, "question_id": question_id, "context_name": context_name},
-    )
-
-
-@app.get("/report-evaluation/form", response_class=HTMLResponse, include_in_schema=False)
-async def get_report_evaluation_form(
-    request: Request,
-    question_id: str,
-    context_name: str,
-) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request,
-        "evaluation_report_form.html",
-        {"question_id": question_id, "context_name": context_name},
-    )
-
-
-@app.post("/report-evaluation", response_class=HTMLResponse, include_in_schema=False)
-async def post_report_evaluation(
-    request: Request,
-    question_id: str = Form(...),
-    context_name: str = Form(...),
-    comment: str = Form(...),
-) -> HTMLResponse:
-    if not comment.strip():
-        logger.warning("422 empty comment on evaluation report for question_id=%s", question_id)
-        raise HTTPException(status_code=422, detail="comment is required")
-    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
-    session_store.record_annotation(question_id, "evaluation", "down", comment)
-    return templates.TemplateResponse(request, "evaluation_reported.html", {})
 
 
 _VALID_TARGET_TYPES = {"question", "evaluation"}
