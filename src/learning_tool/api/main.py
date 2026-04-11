@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 _GITHUB_CONFIGURED = bool(GITHUB_TOKEN and GITHUB_REPO)
 _IMPORT_PROMPT: str | None = None
 _IMPORT_PROMPT_PATH = (
-    Path(__file__).parent.parent / "core" / "context_import" / "context_import_prompt.md"
+    Path(__file__).parent.parent / "resources" / "prompts" / "context_import_prompt.md"
 )
 
 

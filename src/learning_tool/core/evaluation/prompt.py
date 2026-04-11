@@ -2,7 +2,8 @@ from pathlib import Path
 
 from learning_tool.core.models import ContextMetadata, UserProfile
 
-_TEMPLATE = (Path(__file__).parent / "evaluation_prompt.md").read_text()
+_PROMPTS_DIR = Path(__file__).parent.parent.parent / "resources" / "prompts"
+_TEMPLATE = (_PROMPTS_DIR / "evaluation_prompt.md").read_text()
 
 
 def build_evaluation_prompt(
