@@ -388,6 +388,43 @@ async def post_evaluate_fragment(
     )
 
 
+@app.post("/ui/{context_name}/submit", response_class=HTMLResponse, include_in_schema=False)
+async def post_submit_fragment(
+    request: Request,
+    context_name: str,
+    question: str = Form(...),
+    answer: str = Form(...),
+    query: str = Form(...),
+    session_id: str = Form(...),
+    question_id: str | None = Form(default=None),
+) -> HTMLResponse:
+    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
+    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, context_name)
+    next_question, _ = await asyncio.gather(
+        asyncio.to_thread(bank_store.get_random, query),
+        asyncio.to_thread(
+            session_store.record, session_id, question, answer, None, question_id, None
+        ),
+    )
+    if next_question is None:
+        return templates.TemplateResponse(
+            request,
+            "bank_empty.html",
+            {"context_name": context_name, "focus_area": query, "session_id": session_id},
+        )
+    return templates.TemplateResponse(
+        request,
+        "question.html",
+        {
+            "context_name": context_name,
+            "question": next_question.question,
+            "question_id": next_question.id,
+            "query": query,
+            "session_id": session_id,
+        },
+    )
+
+
 @app.get("/ui/{context_name}/capture", response_class=HTMLResponse, include_in_schema=False)
 async def get_capture(request: Request, context_name: str) -> HTMLResponse:
     try:
