@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from learning_tool.api.main import _get_session_store, app
+from learning_tool.api.deps import _get_session_store
+from learning_tool.api.main import app
 from learning_tool.core.models import ContextMetadata, EvaluationResult, Question
 from learning_tool.core.session.store import SessionStore
 
@@ -24,7 +25,7 @@ def client(mock_retriever: MagicMock) -> Generator[TestClient]:
         patch("learning_tool.api.main.SentenceTransformerEmbedder"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
-        patch("learning_tool.api.main.SessionStore", return_value=mock_session_store),
+        patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         TestClient(app) as c,
     ):
