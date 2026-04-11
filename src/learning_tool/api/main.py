@@ -35,21 +35,30 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         level=LOG_LEVEL,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
+
+    # storage
     store_dir = STORE_DIR
     logger.info("store dir: %s", store_dir)
     embedder = SentenceTransformerEmbedder()
     store = ChunkStore(store_dir)
+
     app.state.retriever = Retriever(store=store, embedder=embedder)
     logger.info("retriever ready")
+
+    # rag
     app.state.store_dir = store_dir
     app.state.context_store = ContextStore(store_dir)
     app.state.draft_store = DraftStore(store_dir)
+
+    # api clients
     if not os.environ.get("GEMINI_API_KEY"):
         raise ValueError("GEMINI_API_KEY is not set")
     app.state.anthropic = AsyncAnthropic()
     logger.info("anthropic client ready")
     app.state.gemini = genai.Client()
     logger.info("gemini client ready")
+
+    # caches
     app.state.session_stores = {}  # dict[str, SessionStore], keyed by context name
     app.state.bank_stores = {}  # dict[str, QuestionBankStore], keyed by context name
     yield
