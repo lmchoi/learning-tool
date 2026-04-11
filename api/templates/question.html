@@ -17,7 +17,7 @@
   </div>
 
   <form
-    hx-post="/ui/{{ context_name }}/evaluate"
+    hx-post="/ui/{{ context_name }}/submit"
     hx-target="#question-area"
     hx-swap="outerHTML"
     hx-indicator=".htmx-indicator"
@@ -35,7 +35,7 @@
     ></textarea>
     <br />
     <button type="submit" class="submit">Submit</button>
-    <span class="htmx-indicator"> Evaluating...</span>
+    <span class="htmx-indicator"> Submitting...</span>
   </form>
 
   <button
