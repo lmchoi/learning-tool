@@ -337,6 +337,9 @@ async def get_question_fragment(
             "question_id": question.question_id,
             "query": query,
             "session_id": session_id,
+            "form_action": f"/ui/{context_name}/evaluate",
+            "skip_path": f"/ui/{context_name}/question",
+            "skip_query_param": "query",
         },
     )
 
@@ -421,6 +424,9 @@ async def post_submit_fragment(
             "question_id": next_question.id,
             "query": query,
             "session_id": session_id,
+            "form_action": f"/ui/{context_name}/submit",
+            "skip_path": f"/ui/{context_name}/question/bank",
+            "skip_query_param": "focus_area",
         },
     )
 
@@ -884,6 +890,9 @@ async def get_bank_question_fragment(
             "question_id": question.id,
             "query": focus_area,
             "session_id": session_id,
+            "form_action": f"/ui/{context_name}/submit",
+            "skip_path": f"/ui/{context_name}/question/bank",
+            "skip_query_param": "focus_area",
         },
     )
 

@@ -146,6 +146,18 @@ def test_get_question_fragment_contains_answer_form(
     assert "textarea" in response.text
 
 
+def test_get_question_fragment_form_posts_to_evaluate(
+    client: TestClient, mock_retriever: MagicMock
+) -> None:
+    mock_retriever.retrieve.return_value = [("chunk", 0.9)]
+    with patch(
+        "api.main.generate_question_gemini", new=AsyncMock(return_value=Question(text="What is X?"))
+    ):
+        response = client.get("/ui/my-context/question?query=topic&session_id=test-session-id")
+
+    assert "/ui/my-context/evaluate" in response.text
+
+
 def test_get_question_fragment_passes_query_to_form(
     client: TestClient, mock_retriever: MagicMock
 ) -> None:
