@@ -36,7 +36,9 @@ def test_post_evaluate_returns_200(client: TestClient, mock_retriever: MagicMock
         follow_up_question="How does the electron transport chain work?",
     )
     mock_retriever.retrieve.return_value = [("chunk one", 0.9)]
-    with patch("learning_tool.api.main.evaluate_answer", new=AsyncMock(return_value=evaluation)):
+    with patch(
+        "learning_tool.api.routers.api.evaluate_answer", new=AsyncMock(return_value=evaluation)
+    ):
         response = client.post(
             "/contexts/biology/evaluate",
             json={

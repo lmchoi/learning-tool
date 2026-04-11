@@ -22,14 +22,10 @@ from learning_tool.api.deps import (
     templates,
 )
 from learning_tool.api.models import (
-    AttemptRequest,
     DraftRequest,
     DraftResponse,
-    EvaluateRequest,
-    EvaluationResponse,
-    QuestionResponse,
 )
-from learning_tool.api.routers import admin, annotations, capture  # noqa: F401 (used below)
+from learning_tool.api.routers import admin, annotations, api, capture  # noqa: F401 (used below)
 from learning_tool.core.context_import.draft_store import DraftStore
 from learning_tool.core.context_import.parser import ImportedContext, parse_import
 from learning_tool.core.context_name import validate_context_name
@@ -78,6 +74,7 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), na
 app.include_router(annotations.router)
 app.include_router(admin.router)
 app.include_router(capture.router)
+app.include_router(api.router)
 
 
 @app.middleware("http")
@@ -475,28 +472,6 @@ async def get_history(
     )
 
 
-@app.get("/contexts/{context_name}/questions", tags=["questions"])
-async def get_bank_question(
-    context_name: str,
-    pick: str | None = None,
-    focus_area: str | None = None,
-) -> dict[str, object]:
-    if pick != "random":
-        logger.warning("422 invalid pick param: %r", pick)
-        raise HTTPException(status_code=422, detail="pick must be 'random'")
-    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context_name)
-    question = await asyncio.to_thread(bank_store.get_random, focus_area)
-    if question is None:
-        return {"question": None}
-    return {
-        "question": {
-            "id": question.id,
-            "focus_area": question.focus_area,
-            "question": question.question,
-        }
-    }
-
-
 @app.get("/ui/{context_name}/question/bank", response_class=HTMLResponse, include_in_schema=False)
 async def get_bank_question_fragment(
     request: Request,
@@ -526,94 +501,3 @@ async def get_bank_question_fragment(
             "skip_query_param": "focus_area",
         },
     )
-
-
-@app.post("/api/attempts", tags=["attempts"], status_code=201)
-async def post_attempt(body: AttemptRequest) -> dict[str, int]:
-    try:
-        validate_context_name(body.context)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    if not (app.state.store_dir / body.context).exists():
-        logger.warning("404 context not found: %s", body.context)
-        raise HTTPException(status_code=404, detail=f"Context '{body.context}' not found")
-    session_store = _get_session_store(app.state.session_stores, app.state.store_dir, body.context)
-    attempt_id = await asyncio.to_thread(
-        session_store.record,
-        body.session_id,
-        body.question,
-        body.answer,
-        body.score,
-        body.question_id,
-        body.evaluation.model_dump_json(),
-        focus_area=body.focus_area,
-    )
-    return {"attempt_id": attempt_id}
-
-
-@app.get("/api/questions/{context}", tags=["questions"])
-async def get_api_question(context: str, focus_area: str | None = None) -> dict[str, str]:
-    try:
-        validate_context_name(context)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    if not (app.state.store_dir / context).exists():
-        logger.warning("404 context not found: %s", context)
-        raise HTTPException(status_code=404, detail=f"Context '{context}' not found")
-
-    bank_store = _get_bank_store(app.state.bank_stores, app.state.store_dir, context)
-    question = await asyncio.to_thread(bank_store.get_random, focus_area)
-    if question is None:
-        logger.warning("404 question bank empty for context: %s", context)
-        raise HTTPException(status_code=404, detail=f"No questions found for context '{context}'")
-
-    return {
-        "question_id": question.id,
-        "question": question.question,
-        "focus_area": question.focus_area,
-    }
-
-
-@app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/contexts/{context_name}/question", tags=["questions"])
-async def get_question(context_name: str, query: str) -> QuestionResponse:
-    try:
-        results = await asyncio.to_thread(app.state.retriever.retrieve, context_name, query, k=5)
-        chunks = [chunk for chunk, _ in results]
-    except FileNotFoundError as e:
-        logger.warning("404 context not found: %s", context_name)
-        raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
-
-    metadata = app.state.context_store.load_context(context_name)
-    profile = UserProfile(experience_level="beginner")
-    prompt = build_question_prompt(chunks, profile, metadata)
-    question = await generate_question_gemini(prompt, app.state.gemini)
-    return QuestionResponse(text=question.text, question_id=question.question_id)
-
-
-@app.post("/contexts/{context_name}/evaluate", tags=["evaluation"])
-async def post_evaluate(context_name: str, body: EvaluateRequest) -> EvaluationResponse:
-    try:
-        results = await asyncio.to_thread(
-            app.state.retriever.retrieve, context_name, body.query, k=5
-        )
-        chunks = [chunk for chunk, _ in results]
-    except FileNotFoundError as e:
-        logger.warning("404 context not found: %s", context_name)
-        raise HTTPException(status_code=404, detail=f"Context '{context_name}' not found") from e
-
-    metadata = app.state.context_store.load_context(context_name)
-    profile = UserProfile(experience_level="beginner")
-    prompt = build_evaluation_prompt(
-        question=body.question,
-        answer=body.answer,
-        chunks=chunks,
-        profile=profile,
-        metadata=metadata,
-    )
-    result = await evaluate_answer(prompt, app.state.anthropic)
-    return EvaluationResponse(**result.model_dump())
