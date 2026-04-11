@@ -17,7 +17,7 @@
   </div>
 
   <form
-    hx-post="/ui/{{ context_name }}/submit"
+    hx-post="{{ form_action }}"
     hx-target="#question-area"
     hx-swap="outerHTML"
     hx-indicator=".htmx-indicator"
@@ -40,7 +40,7 @@
 
   <button
     class="skip"
-    hx-get="/ui/{{ context_name }}/question/bank?focus_area={{ query | urlencode }}&session_id={{ session_id }}"
+    hx-get="{{ skip_path }}?{{ skip_query_param }}={{ query | urlencode }}&session_id={{ session_id }}"
     hx-target="#question-area"
     hx-swap="outerHTML"
   >Skip</button>

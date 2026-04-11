@@ -61,8 +61,8 @@ def test_post_submit_records_attempt_with_none_score(
     )
 
     mock_session_store.record.assert_called_once()
-    _, kwargs = mock_session_store.record.call_args
-    assert kwargs.get("score") is None or mock_session_store.record.call_args[0][3] is None
+    # record is called positionally: (session_id, question, answer, score, question_id, result_json)
+    assert mock_session_store.record.call_args[0][3] is None
 
 
 def test_post_submit_returns_next_question(
