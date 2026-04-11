@@ -13,7 +13,7 @@ from learning_tool.core.session.models import QuestionAttempt, SessionRecord
 def client() -> Generator[TestClient]:
     mock_session_store = MagicMock()
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.create_stores"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),

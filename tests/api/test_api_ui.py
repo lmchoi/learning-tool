@@ -13,8 +13,8 @@ from learning_tool.core.session.store import SessionStore
 
 @pytest.fixture()
 def mock_retriever() -> Generator[MagicMock]:
-    with patch("learning_tool.api.main.Retriever") as mock_cls:
-        yield mock_cls.return_value
+    with patch("learning_tool.api.main.create_stores") as mock_create:
+        yield mock_create.return_value.retriever
 
 
 @pytest.fixture()
@@ -22,7 +22,6 @@ def client(mock_retriever: MagicMock) -> Generator[TestClient]:
     mock_session_store = MagicMock()
     mock_session_store.start_session.return_value = "test-session-id"
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),

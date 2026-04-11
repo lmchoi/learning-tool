@@ -10,8 +10,8 @@ from learning_tool.api.main import app
 
 @pytest.fixture()
 def mock_retriever() -> Generator[MagicMock]:
-    with patch("learning_tool.api.main.Retriever") as mock_cls:
-        yield mock_cls.return_value
+    with patch("learning_tool.api.main.create_stores") as mock_create:
+        yield mock_create.return_value.retriever
 
 
 @pytest.fixture()
@@ -26,7 +26,6 @@ def client(
     tmp_path: Path, mock_retriever: MagicMock, mock_session_store: MagicMock
 ) -> Generator[TestClient]:
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),

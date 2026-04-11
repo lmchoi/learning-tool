@@ -13,10 +13,9 @@ def _make_client(
 ) -> Generator[tuple[TestClient, MagicMock]]:
     mock_exists = MagicMock(return_value=store_exists)
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.create_stores"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
-        patch("learning_tool.api.main.Retriever"),
         patch("learning_tool.api.deps.QuestionBankStore", return_value=mock_bank_store),
         patch("learning_tool.api.main.Path.exists", mock_exists),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),

@@ -8,6 +8,7 @@ from learning_tool.cli.main import app
 from learning_tool.core.ingestion.embedder import FakeEmbedder
 from learning_tool.core.ingestion.store import ChunkStore, ContextStore
 from learning_tool.core.models import ContextMetadata
+from learning_tool.core.stores import create_stores
 
 runner = CliRunner()
 
@@ -41,7 +42,7 @@ def test_init_warns_and_exits_when_context_exists(tmp_path: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["init", "--source", str(source), "--context", "my-context", "--store-dir", str(store_dir)],
+        ["--store-dir", str(store_dir), "init", "--source", str(source), "--context", "my-context"],
     )
 
     assert result.exit_code == 1
@@ -62,19 +63,18 @@ def test_init_force_reingest_overwrites_existing_context(tmp_path: Path) -> None
         ContextMetadata(goal="Old goal.", focus_areas=["old area"]),
     )
 
-    with patch(
-        "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
-    ):
+    with patch("learning_tool.cli.main.create_stores") as mock_create_stores:
+        mock_create_stores.return_value = create_stores(store_dir, embedder=FakeEmbedder(dim=8))
         result = runner.invoke(
             app,
             [
+                "--store-dir",
+                str(store_dir),
                 "init",
                 "--source",
                 str(source),
                 "--context",
                 "my-context",
-                "--store-dir",
-                str(store_dir),
                 "--force",
             ],
         )
@@ -99,21 +99,20 @@ def test_init_force_reingest_updates_context_yaml(tmp_path: Path) -> None:
     )
 
     with (
-        patch(
-            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
-        ),
+        patch("learning_tool.cli.main.create_stores") as mock_create_stores,
         patch("learning_tool.cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
     ):
+        mock_create_stores.return_value = create_stores(store_dir, embedder=FakeEmbedder(dim=8))
         result = runner.invoke(
             app,
             [
+                "--store-dir",
+                str(store_dir),
                 "init",
                 "--source",
                 str(source),
                 "--context",
                 "my-context",
-                "--store-dir",
-                str(store_dir),
                 "--force",
             ],
         )
@@ -134,14 +133,13 @@ def test_init_ingests_supported_files(tmp_path: Path) -> None:
     store_dir = tmp_path / "store"
 
     with (
-        patch(
-            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
-        ),
+        patch("learning_tool.cli.main.create_stores") as mock_create_stores,
         patch("learning_tool.cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
     ):
+        mock_create_stores.return_value = create_stores(store_dir, embedder=FakeEmbedder(dim=8))
         result = runner.invoke(
             app,
-            ["init", "--source", str(source), "--context", "test", "--store-dir", str(store_dir)],
+            ["--store-dir", str(store_dir), "init", "--source", str(source), "--context", "test"],
         )
 
     assert result.exit_code == 0
@@ -157,21 +155,20 @@ def test_init_extracts_and_saves_context_yaml(source_dir: Path, tmp_path: Path) 
     store_dir = tmp_path / "store"
 
     with (
-        patch(
-            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
-        ),
+        patch("learning_tool.cli.main.create_stores") as mock_create_stores,
         patch("learning_tool.cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
     ):
+        mock_create_stores.return_value = create_stores(store_dir, embedder=FakeEmbedder(dim=8))
         result = runner.invoke(
             app,
             [
+                "--store-dir",
+                str(store_dir),
                 "init",
                 "--source",
                 str(source_dir),
                 "--context",
                 "test",
-                "--store-dir",
-                str(store_dir),
             ],
         )
 
@@ -187,21 +184,20 @@ def test_init_prints_goal_and_focus_areas(source_dir: Path, tmp_path: Path) -> N
     store_dir = tmp_path / "store"
 
     with (
-        patch(
-            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
-        ),
+        patch("learning_tool.cli.main.create_stores") as mock_create_stores,
         patch("learning_tool.cli.main.extract_context", new=AsyncMock(return_value=_FAKE_METADATA)),
     ):
+        mock_create_stores.return_value = create_stores(store_dir, embedder=FakeEmbedder(dim=8))
         result = runner.invoke(
             app,
             [
+                "--store-dir",
+                str(store_dir),
                 "init",
                 "--source",
                 str(source_dir),
                 "--context",
                 "test",
-                "--store-dir",
-                str(store_dir),
             ],
         )
 
@@ -216,21 +212,20 @@ def test_init_skips_context_extraction_when_no_goal_md(source_dir: Path, tmp_pat
     store_dir = tmp_path / "store"
 
     with (
-        patch(
-            "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
-        ),
+        patch("learning_tool.cli.main.create_stores") as mock_create_stores,
         patch("learning_tool.cli.main.extract_context", new=AsyncMock()) as mock_extract,
     ):
+        mock_create_stores.return_value = create_stores(store_dir, embedder=FakeEmbedder(dim=8))
         result = runner.invoke(
             app,
             [
+                "--store-dir",
+                str(store_dir),
                 "init",
                 "--source",
                 str(source_dir),
                 "--context",
                 "test",
-                "--store-dir",
-                str(store_dir),
             ],
         )
 
@@ -248,7 +243,7 @@ def test_init_excludes_goal_md(tmp_path: Path) -> None:
     # Only GOAL.md present — should fail as no supported files remain
     result = runner.invoke(
         app,
-        ["init", "--source", str(source), "--context", "test", "--store-dir", str(store_dir)],
+        ["--store-dir", str(store_dir), "init", "--source", str(source), "--context", "test"],
     )
     assert result.exit_code == 1
 
@@ -257,13 +252,13 @@ def test_init_fails_for_missing_source_dir(tmp_path: Path) -> None:
     result = runner.invoke(
         app,
         [
+            "--store-dir",
+            str(tmp_path),
             "init",
             "--source",
             str(tmp_path / "nonexistent"),
             "--context",
             "test",
-            "--store-dir",
-            str(tmp_path),
         ],
     )
     assert result.exit_code == 1
@@ -276,7 +271,7 @@ def test_init_fails_when_no_supported_files(tmp_path: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["init", "--source", str(source), "--context", "test", "--store-dir", str(tmp_path)],
+        ["--store-dir", str(tmp_path), "init", "--source", str(source), "--context", "test"],
     )
     assert result.exit_code == 1
 
@@ -288,16 +283,15 @@ def test_init_wipes_and_rebuilds(tmp_path: Path, context: str) -> None:
     (source / "doc.md").write_text("Only paragraph.")
     store_dir = tmp_path / "store"
 
-    with patch(
-        "learning_tool.cli.main.SentenceTransformerEmbedder", return_value=FakeEmbedder(dim=8)
-    ):
+    with patch("learning_tool.cli.main.create_stores") as mock_create_stores:
+        mock_create_stores.return_value = create_stores(store_dir, embedder=FakeEmbedder(dim=8))
         runner.invoke(
             app,
-            ["init", "--source", str(source), "--context", context, "--store-dir", str(store_dir)],
+            ["--store-dir", str(store_dir), "init", "--source", str(source), "--context", context],
         )
         runner.invoke(
             app,
-            ["init", "--source", str(source), "--context", context, "--store-dir", str(store_dir)],
+            ["--store-dir", str(store_dir), "init", "--source", str(source), "--context", context],
         )
 
     store = ChunkStore(store_dir)
@@ -307,7 +301,7 @@ def test_init_wipes_and_rebuilds(tmp_path: Path, context: str) -> None:
 
 def test_question_prompt_fails_fast_for_unknown_context(tmp_path: Path) -> None:
     result = runner.invoke(
-        app, ["question-prompt", "no-such-context", "some query", "--store-dir", str(tmp_path)]
+        app, ["--store-dir", str(tmp_path), "question-prompt", "no-such-context", "some query"]
     )
     assert result.exit_code == 1
     assert "no-such-context" in result.output
@@ -315,7 +309,7 @@ def test_question_prompt_fails_fast_for_unknown_context(tmp_path: Path) -> None:
 
 def test_question_fails_fast_for_unknown_context(tmp_path: Path) -> None:
     result = runner.invoke(
-        app, ["question", "no-such-context", "some query", "--store-dir", str(tmp_path)]
+        app, ["--store-dir", str(tmp_path), "question", "no-such-context", "some query"]
     )
     assert result.exit_code == 1
     assert "no-such-context" in result.output

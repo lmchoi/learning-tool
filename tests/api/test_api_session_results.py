@@ -14,7 +14,7 @@ def client_and_store() -> Generator[tuple[TestClient, MagicMock]]:
     mock_session_store = MagicMock()
     app.state.session_stores = {}
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.create_stores"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),

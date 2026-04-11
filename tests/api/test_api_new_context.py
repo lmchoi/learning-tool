@@ -10,7 +10,7 @@ from learning_tool.api.main import app
 @pytest.fixture()
 def client() -> Generator[TestClient]:
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.create_stores"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),

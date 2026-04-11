@@ -33,7 +33,7 @@ def mock_session_store() -> MagicMock:
 @pytest.fixture()
 def client(tmp_path: Path, mock_session_store: MagicMock) -> Generator[TestClient]:
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.create_stores"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.deps.SessionStore", return_value=mock_session_store),
