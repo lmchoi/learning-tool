@@ -40,7 +40,7 @@
 
   <button
     class="skip"
-    hx-get="/ui/{{ context_name }}/question?query={{ query | urlencode }}&session_id={{ session_id }}"
+    hx-get="/ui/{{ context_name }}/question/bank?focus_area={{ query | urlencode }}&session_id={{ session_id }}"
     hx-target="#question-area"
     hx-swap="outerHTML"
   >Skip</button>

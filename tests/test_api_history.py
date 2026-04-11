@@ -26,7 +26,7 @@ def client() -> Generator[TestClient]:
 def _attempt(
     question: str = "What is X?",
     answer: str = "It is Y.",
-    score: int = 7,
+    score: int | None = 7,
     result: dict[str, object] | None = None,
 ) -> QuestionAttempt:
     return QuestionAttempt(
@@ -150,6 +150,32 @@ def test_get_history_malformed_result_json_falls_back_to_none(client: TestClient
 
     assert response.status_code == 200
     assert "6/10" in response.text  # attempt still rendered, just no breakdown
+
+
+def test_get_history_renders_unevaluated_attempt_without_500(client: TestClient) -> None:
+    app.state.session_stores = {}
+    app.state.session_stores["my-context"] = MagicMock()
+    app.state.session_stores["my-context"].load_sessions.return_value = [
+        _session([_attempt(score=None)])
+    ]
+
+    response = client.get("/ui/my-context/history")
+
+    assert response.status_code == 200
+    assert "pending" in response.text
+
+
+def test_get_history_avg_excludes_unevaluated_attempts(client: TestClient) -> None:
+    app.state.session_stores = {}
+    app.state.session_stores["my-context"] = MagicMock()
+    app.state.session_stores["my-context"].load_sessions.return_value = [
+        _session([_attempt(score=8), _attempt(score=None)])
+    ]
+
+    response = client.get("/ui/my-context/history")
+
+    assert response.status_code == 200
+    assert "8.0/10" in response.text  # avg over scored attempts only
 
 
 def test_get_history_shows_back_link(client: TestClient) -> None:
