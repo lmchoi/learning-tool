@@ -177,13 +177,13 @@ def test_load_questions_cmd_loads_questions(tmp_path: Path) -> None:
     result = runner.invoke(
         app,
         [
+            "--store-dir",
+            str(tmp_path),
             "load-questions-cmd",
             "--context",
             "myctx",
             "--file",
             str(f),
-            "--store-dir",
-            str(tmp_path),
         ],
     )
     assert result.exit_code == 0
@@ -196,13 +196,13 @@ def test_load_questions_cmd_is_idempotent(tmp_path: Path) -> None:
     f = tmp_path / "questions.yaml"
     _write_questions_yaml(f)
     args = [
+        "--store-dir",
+        str(tmp_path),
         "load-questions-cmd",
         "--context",
         "myctx",
         "--file",
         str(f),
-        "--store-dir",
-        str(tmp_path),
     ]
     runner.invoke(app, args)
     result = runner.invoke(app, args)
@@ -217,13 +217,13 @@ def test_load_questions_cmd_fails_for_invalid_yaml_structure(tmp_path: Path) -> 
     result = runner.invoke(
         app,
         [
+            "--store-dir",
+            str(tmp_path),
             "load-questions-cmd",
             "--context",
             "myctx",
             "--file",
             str(f),
-            "--store-dir",
-            str(tmp_path),
         ],
     )
     assert result.exit_code == 1
@@ -233,13 +233,13 @@ def test_load_questions_cmd_fails_for_missing_file(tmp_path: Path) -> None:
     result = runner.invoke(
         app,
         [
+            "--store-dir",
+            str(tmp_path),
             "load-questions-cmd",
             "--context",
             "myctx",
             "--file",
             str(tmp_path / "nonexistent.yaml"),
-            "--store-dir",
-            str(tmp_path),
         ],
     )
     assert result.exit_code == 1

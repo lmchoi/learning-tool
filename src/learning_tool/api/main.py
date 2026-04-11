@@ -20,11 +20,8 @@ from learning_tool.api.routers import (
     endpoints,
     practice,
 )
-from learning_tool.core.context_import.draft_store import DraftStore
-from learning_tool.core.ingestion.embedder import SentenceTransformerEmbedder
-from learning_tool.core.ingestion.store import ChunkStore, ContextStore
-from learning_tool.core.rag.retriever import Retriever
 from learning_tool.core.settings import LOG_LEVEL, STORE_DIR
+from learning_tool.core.stores import create_stores
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +36,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # storage
     store_dir = STORE_DIR
     logger.info("store dir: %s", store_dir)
-    embedder = SentenceTransformerEmbedder()
-    store = ChunkStore(store_dir)
+    stores = create_stores(store_dir)
 
-    app.state.retriever = Retriever(store=store, embedder=embedder)
+    app.state.retriever = stores.retriever
     logger.info("retriever ready")
 
     # rag
     app.state.store_dir = store_dir
-    app.state.context_store = ContextStore(store_dir)
-    app.state.draft_store = DraftStore(store_dir)
+    app.state.context_store = stores.context_store
+    app.state.draft_store = stores.draft_store
 
     # api clients
     if not os.environ.get("GEMINI_API_KEY"):

@@ -12,7 +12,7 @@ from learning_tool.core.context_import.draft_store import DraftStore
 
 def _make_client(store_dir: Path) -> Generator[TestClient]:
     with ExitStack() as stack:
-        stack.enter_context(patch("learning_tool.api.main.SentenceTransformerEmbedder"))
+        stack.enter_context(patch("learning_tool.api.main.create_stores"))
         stack.enter_context(patch("learning_tool.api.main.AsyncAnthropic"))
         stack.enter_context(patch("learning_tool.api.main.genai"))
         stack.enter_context(patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}))

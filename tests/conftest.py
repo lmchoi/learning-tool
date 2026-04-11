@@ -12,7 +12,7 @@ from learning_tool.core.ingestion.store import ContextStore
 def make_api_client(store_dir: Path) -> Generator[TestClient]:
     """Yield a TestClient with heavy dependencies mocked and store wired to store_dir."""
     with ExitStack() as stack:
-        stack.enter_context(patch("learning_tool.api.main.SentenceTransformerEmbedder"))
+        stack.enter_context(patch("learning_tool.api.main.create_stores"))
         stack.enter_context(patch("learning_tool.api.main.AsyncAnthropic"))
         stack.enter_context(patch("learning_tool.api.main.genai"))
         stack.enter_context(patch("learning_tool.api.deps.SessionStore"))

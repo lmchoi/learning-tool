@@ -10,14 +10,13 @@ from learning_tool.core.models import EvaluationResult
 
 @pytest.fixture()
 def mock_retriever() -> Generator[MagicMock]:
-    with patch("learning_tool.api.main.Retriever") as mock_cls:
-        yield mock_cls.return_value
+    with patch("learning_tool.api.main.create_stores") as mock_create:
+        yield mock_create.return_value.retriever
 
 
 @pytest.fixture()
 def client(mock_retriever: MagicMock) -> Generator[TestClient]:
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),

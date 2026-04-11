@@ -26,7 +26,7 @@ Learn Python async programming.
 @pytest.fixture()
 def client(tmp_path: Path) -> Generator[TestClient]:
     with (
-        patch("learning_tool.api.main.SentenceTransformerEmbedder"),
+        patch("learning_tool.api.main.create_stores"),
         patch("learning_tool.api.main.AsyncAnthropic"),
         patch("learning_tool.api.main.genai"),
         patch("learning_tool.api.deps.SessionStore"),
